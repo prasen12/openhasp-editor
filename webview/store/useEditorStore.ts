@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Page, Widget } from '../types';
+import { Page, Widget, DeviceProperties } from '../types';
 
 interface EditorState {
   pages: Page[];
@@ -8,11 +8,15 @@ interface EditorState {
   isDirty: boolean;
   canvasWidth: number;
   canvasHeight: number;
+  deviceProperties: DeviceProperties | null;
+  fontOverrideUri: string;
 
   setPages: (pages: Page[]) => void;
   setFileName: (fileName: string) => void;
   setCurrentPage: (pageId: number) => void;
   setCanvasSize: (width: number, height: number) => void;
+  setDeviceProperties: (props: DeviceProperties) => void;
+  setFontOverrideUri: (uri: string) => void;
 
   addPage: () => void;
   deletePage: (pageId: number) => void;
@@ -34,10 +38,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isDirty: false,
   canvasWidth: 720,
   canvasHeight: 480,
+  deviceProperties: null,
+  fontOverrideUri: '',
 
   setPages: (pages: Page[]) => {
     set({ pages, isDirty: false });
-    // Ensure current page exists
     const currentPageId = get().currentPageId;
     if (!pages.find(p => p.id === currentPageId) && pages.length > 0) {
       set({ currentPageId: pages[0].id });
@@ -49,6 +54,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setCanvasSize: (width: number, height: number) => set({ canvasWidth: width, canvasHeight: height }),
 
   setCurrentPage: (pageId: number) => set({ currentPageId: pageId }),
+
+  setDeviceProperties: (props: DeviceProperties) => set({ deviceProperties: props, isDirty: true }),
+
+  setFontOverrideUri: (uri: string) => set({ fontOverrideUri: uri }),
 
   addPage: () => {
     const pages = get().pages;
@@ -64,12 +73,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   deletePage: (pageId: number) => {
     const pages = get().pages.filter(p => p.id !== pageId);
     const newState: any = { pages, isDirty: true };
-
-    // Update current page if deleted
     if (get().currentPageId === pageId && pages.length > 0) {
       newState.currentPageId = pages[0].id;
     }
-
     set(newState);
   },
 
@@ -113,10 +119,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({
       pages: get().pages.map(page =>
         page.id === pageId
-          ? {
-              ...page,
-              widgets: page.widgets.filter(w => w.id !== widgetId)
-            }
+          ? { ...page, widgets: page.widgets.filter(w => w.id !== widgetId) }
           : page
       ),
       isDirty: true
@@ -127,10 +130,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({
       pages: get().pages.map(page =>
         page.id === pageId
-          ? {
-              ...page,
-              widgets: page.widgets.filter(w => !widgetIds.includes(w.id))
-            }
+          ? { ...page, widgets: page.widgets.filter(w => !widgetIds.includes(w.id)) }
           : page
       ),
       isDirty: true

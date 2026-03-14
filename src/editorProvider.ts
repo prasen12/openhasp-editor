@@ -1,8 +1,14 @@
 import * as vscode from 'vscode';
 import { JsonlParser } from './jsonl/parser';
 import { JsonlSerializer } from './jsonl/serializer';
-import { Page, ToWebviewMessage, ToExtensionMessage } from './types/models';
+import { HaspJsonParser } from './haspJson/parser';
+import { HaspJsonSerializer } from './haspJson/serializer';
+import { Page, DeviceProperties, ToWebviewMessage, ToExtensionMessage } from './types/models';
 import * as path from 'path';
+
+function isHaspJsonFile(document: vscode.TextDocument): boolean {
+  return document.uri.fsPath.endsWith('.hasp.json');
+}
 
 export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
   public static readonly viewType = 'openhasp.pageEditor';
@@ -14,60 +20,96 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
     webviewPanel: vscode.WebviewPanel,
     token: vscode.CancellationToken
   ): Promise<void> {
-    // Check for user-specified icon font
+    const isHaspJson = isHaspJsonFile(document);
+
+    // Determine font paths: from settings (icon font) and from document (font override)
     const editorConfig = vscode.workspace.getConfiguration('openhasp.editor');
     const iconFontPath = editorConfig.get<string>('iconFont', '').trim();
 
-    const resourceRoots = [
-      vscode.Uri.joinPath(this.context.extensionUri, 'dist'),
-      vscode.Uri.joinPath(this.context.extensionUri, 'webview')
-    ];
-    if (iconFontPath) {
-      // Allow the webview to load the font from its containing directory
-      resourceRoots.push(vscode.Uri.file(path.dirname(iconFontPath)));
+    // Parse document to get device properties (for font override path)
+    let fontOverridePath = '';
+    if (isHaspJson) {
+      const parsed = HaspJsonParser.parse(document.getText());
+      fontOverridePath = parsed.deviceProperties.fontOverrideFile?.trim() ?? '';
     }
 
-    // Setup webview options
+    const resourceRoots = [
+      vscode.Uri.joinPath(this.context.extensionUri, 'dist'),
+      vscode.Uri.joinPath(this.context.extensionUri, 'webview'),
+    ];
+    if (iconFontPath) {
+      resourceRoots.push(vscode.Uri.file(path.dirname(iconFontPath)));
+    }
+    if (fontOverridePath) {
+      resourceRoots.push(vscode.Uri.file(path.dirname(fontOverridePath)));
+    }
+
     webviewPanel.webview.options = {
       enableScripts: true,
-      localResourceRoots: resourceRoots
+      localResourceRoots: resourceRoots,
     };
 
-    // Set HTML content
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview, iconFontPath);
 
-    // Parse the document
-    const pages = JsonlParser.parse(document.getText());
-
-    // Function to update webview
-    const updateWebview = () => {
-      const pages = JsonlParser.parse(document.getText());
-      const message: ToWebviewMessage = {
-        type: 'documentChanged',
-        pages: pages
-      };
-      webviewPanel.webview.postMessage(message);
+    const getFontOverrideUri = (propsOrPath: DeviceProperties | string): string => {
+      const filePath = typeof propsOrPath === 'string'
+        ? propsOrPath
+        : propsOrPath.fontOverrideFile?.trim() ?? '';
+      if (!filePath) return '';
+      try {
+        return webviewPanel.webview.asWebviewUri(vscode.Uri.file(filePath)).toString();
+      } catch {
+        return '';
+      }
     };
 
-    // Handle messages from the webview
+    const buildInitMessage = (text: string): ToWebviewMessage => {
+      if (isHaspJson) {
+        const { pages, deviceProperties } = HaspJsonParser.parse(text);
+        const config = vscode.workspace.getConfiguration('openhasp.editor');
+        return {
+          type: 'init',
+          pages,
+          fileName: path.basename(document.uri.fsPath),
+          canvasWidth: deviceProperties.width ?? config.get<number>('canvasWidth', 720),
+          canvasHeight: deviceProperties.height ?? config.get<number>('canvasHeight', 480),
+          deviceProperties,
+          fontOverrideUri: getFontOverrideUri(deviceProperties),
+        };
+      } else {
+        const config = vscode.workspace.getConfiguration('openhasp.editor');
+        return {
+          type: 'init',
+          pages: JsonlParser.parse(text),
+          fileName: path.basename(document.uri.fsPath),
+          canvasWidth: config.get<number>('canvasWidth', 720),
+          canvasHeight: config.get<number>('canvasHeight', 480),
+        };
+      }
+    };
+
+    const buildChangedMessage = (text: string): ToWebviewMessage => {
+      if (isHaspJson) {
+        const { pages, deviceProperties } = HaspJsonParser.parse(text);
+        return {
+          type: 'documentChanged',
+          pages,
+          deviceProperties,
+          fontOverrideUri: getFontOverrideUri(deviceProperties),
+        };
+      } else {
+        return { type: 'documentChanged', pages: JsonlParser.parse(text) };
+      }
+    };
+
     webviewPanel.webview.onDidReceiveMessage(async (message: ToExtensionMessage) => {
       switch (message.type) {
-        case 'ready': {
-          // Send initial data when webview is ready
-          const config = vscode.workspace.getConfiguration('openhasp.editor');
-          const initMessage: ToWebviewMessage = {
-            type: 'init',
-            pages: JsonlParser.parse(document.getText()),
-            fileName: path.basename(document.uri.fsPath),
-            canvasWidth: config.get<number>('canvasWidth', 720),
-            canvasHeight: config.get<number>('canvasHeight', 480)
-          };
-          webviewPanel.webview.postMessage(initMessage);
+        case 'ready':
+          webviewPanel.webview.postMessage(buildInitMessage(document.getText()));
           break;
-        }
 
         case 'update':
-          await this.updateDocument(document, message.pages);
+          await this.updateDocument(document, message.pages, message.deviceProperties, isHaspJson);
           break;
 
         case 'mqtt-upload':
@@ -80,35 +122,58 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
       }
     });
 
-    // Sync document changes to webview
     const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
       if (e.document.uri.toString() === document.uri.toString() && e.contentChanges.length > 0) {
-        updateWebview();
+        webviewPanel.webview.postMessage(buildChangedMessage(e.document.getText()));
       }
     });
 
-    // Cleanup on dispose
     webviewPanel.onDidDispose(() => {
       changeDocumentSubscription.dispose();
     });
   }
 
-  private async updateDocument(document: vscode.TextDocument, pages: Page[]): Promise<void> {
+  public async exportAsJsonl(document: vscode.TextDocument): Promise<void> {
+    let pages: Page[];
+    if (isHaspJsonFile(document)) {
+      ({ pages } = HaspJsonParser.parse(document.getText()));
+    } else {
+      pages = JsonlParser.parse(document.getText());
+    }
+
+    const defaultName = path.basename(document.uri.fsPath).replace(/\.hasp\.json$/, '') + '.jsonl';
+    const uri = await vscode.window.showSaveDialog({
+      filters: { 'JSONL Files': ['jsonl'] },
+      defaultUri: vscode.Uri.file(path.join(path.dirname(document.uri.fsPath), defaultName)),
+    });
+
+    if (uri) {
+      const content = JsonlSerializer.serialize(pages);
+      await vscode.workspace.fs.writeFile(uri, Buffer.from(content, 'utf8'));
+      vscode.window.showInformationMessage(`Exported JSONL to ${uri.fsPath}`);
+    }
+  }
+
+  private async updateDocument(
+    document: vscode.TextDocument,
+    pages: Page[],
+    deviceProperties: DeviceProperties | undefined,
+    isHaspJson: boolean
+  ): Promise<void> {
     const edit = new vscode.WorkspaceEdit();
-    const jsonlContent = JsonlSerializer.serialize(pages);
+    let content: string;
 
-    // Replace entire document
-    edit.replace(
-      document.uri,
-      new vscode.Range(0, 0, document.lineCount, 0),
-      jsonlContent
-    );
+    if (isHaspJson && deviceProperties) {
+      content = HaspJsonSerializer.serialize(pages, deviceProperties);
+    } else {
+      content = JsonlSerializer.serialize(pages);
+    }
 
+    edit.replace(document.uri, new vscode.Range(0, 0, document.lineCount, 0), content);
     await vscode.workspace.applyEdit(edit);
   }
 
-  private async handleMqttUpload(config: any, pages: Page[], device: string): Promise<void> {
-    // This will be implemented when we add MQTT support
+  private async handleMqttUpload(_config: any, _pages: Page[], device: string): Promise<void> {
     vscode.window.showInformationMessage(`MQTT upload not yet implemented. Would upload to ${device}`);
   }
 
@@ -122,9 +187,9 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
       filters: {
         'JSONL Files': ['jsonl'],
         'JSON Files': ['json'],
-        'All Files': ['*']
+        'All Files': ['*'],
       },
-      defaultUri: vscode.Uri.file(`pages.${format}`)
+      defaultUri: vscode.Uri.file(`pages.${format}`),
     });
 
     if (uri) {
@@ -134,12 +199,10 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private getHtmlForWebview(webview: vscode.Webview, iconFontPath: string = ''): string {
-    // Get the local path to main script
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.js')
     );
 
-    // Use a nonce to only allow specific scripts to run
     const nonce = getNonce();
     const isDev = this.context.extensionMode === vscode.ExtensionMode.Development;
 
@@ -147,7 +210,6 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
       ? `default-src 'none'; connect-src ${webview.cspSource} ws://localhost:8097; img-src ${webview.cspSource} https:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' http://localhost:8097; font-src ${webview.cspSource} data:;`
       : `default-src 'none'; connect-src ${webview.cspSource}; img-src ${webview.cspSource} https:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; font-src ${webview.cspSource} data:;`;
 
-    // Build @font-face for user-specified icon font (loaded via vscode-resource URI)
     let iconFontFace = '';
     if (iconFontPath) {
       const fontUri = webview.asWebviewUri(vscode.Uri.file(iconFontPath));

@@ -22,6 +22,7 @@
   flex: 1;
   display: flex;
   overflow: hidden;
+  min-height: 0;
 }
 
 .editor-left-panel {
@@ -29,6 +30,19 @@
   border-right: 1px solid var(--vscode-panel-border);
   overflow-y: auto;
   background-color: var(--vscode-sideBar-background);
+}
+
+.editor-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-canvas-header {
+  flex-shrink: 0;
+  background-color: var(--vscode-editorGroupHeader-tabsBackground);
+  border-bottom: 1px solid var(--vscode-panel-border);
 }
 
 .editor-canvas-area {

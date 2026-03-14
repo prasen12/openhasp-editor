@@ -1,4 +1,4 @@
-import { Page } from '../types';
+import { Page, DeviceProperties } from '../types';
 
 declare global {
   interface Window {
@@ -42,8 +42,8 @@ class VSCodeAPIWrapper {
     }
   }
 
-  public updatePages(pages: Page[]): void {
-    this.postMessage({ type: 'update', pages });
+  public updatePages(pages: Page[], deviceProperties?: DeviceProperties): void {
+    this.postMessage({ type: 'update', pages, deviceProperties });
   }
 
   public uploadToDevice(config: any, pages: Page[], device: string): void {

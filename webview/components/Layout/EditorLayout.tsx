@@ -3,6 +3,7 @@ import './EditorLayout.css';
 
 interface EditorLayoutProps {
   leftPanel: React.ReactNode;
+  canvasHeader?: React.ReactNode;
   canvas: React.ReactNode;
   rightPanel: React.ReactNode;
   topBar?: React.ReactNode;
@@ -11,6 +12,7 @@ interface EditorLayoutProps {
 
 export const EditorLayout: React.FC<EditorLayoutProps> = ({
   leftPanel,
+  canvasHeader,
   canvas,
   rightPanel,
   topBar,
@@ -22,7 +24,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
       <div className="editor-main">
         <div className="editor-left-panel">{leftPanel}</div>
-        <div className="editor-canvas-area">{canvas}</div>
+        <div className="editor-center">
+          {canvasHeader && <div className="editor-canvas-header">{canvasHeader}</div>}
+          <div className="editor-canvas-area">{canvas}</div>
+        </div>
         <div className="editor-right-panel">{rightPanel}</div>
       </div>
 

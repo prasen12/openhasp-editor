@@ -1,0 +1,74 @@
+.device-props-panel {
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.device-props-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.device-props-header:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.device-props-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vscode-foreground);
+}
+
+.device-props-chevron {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.device-props-body {
+  padding: 4px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.device-props-row {
+  display: flex;
+  gap: 8px;
+}
+
+.device-props-row .device-props-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.device-props-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.device-props-field span {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.device-props-field input {
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 3px;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-family: var(--vscode-font-family);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.device-props-field input:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  border-color: var(--vscode-focusBorder);
+}

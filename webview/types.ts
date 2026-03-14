@@ -40,6 +40,14 @@ export interface Page {
   widgets: Widget[];
 }
 
+export interface DeviceProperties {
+  width: number;
+  height: number;
+  deviceName: string;
+  fontOverrideFile?: string;
+  fontName?: string;
+}
+
 export interface Template {
   id: string;
   name: string;

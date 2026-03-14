@@ -50,6 +50,19 @@ export interface Page {
   widgets: Widget[];
 }
 
+export interface DeviceProperties {
+  width: number;
+  height: number;
+  deviceName: string;
+  fontOverrideFile?: string;
+  fontName?: string;
+}
+
+export interface HaspDocument {
+  deviceProperties: DeviceProperties;
+  layout: Page[];
+}
+
 export interface Template {
   id: string;
   name: string;
@@ -67,12 +80,12 @@ export interface MqttConfig {
 }
 
 export type ToWebviewMessage =
-  | { type: 'init'; pages: Page[]; fileName: string; canvasWidth: number; canvasHeight: number }
-  | { type: 'documentChanged'; pages: Page[] }
+  | { type: 'init'; pages: Page[]; fileName: string; canvasWidth: number; canvasHeight: number; deviceProperties?: DeviceProperties; fontOverrideUri?: string }
+  | { type: 'documentChanged'; pages: Page[]; deviceProperties?: DeviceProperties; fontOverrideUri?: string }
   | { type: 'mqttStatus'; connected: boolean; device?: string };
 
 export type ToExtensionMessage =
-  | { type: 'update'; pages: Page[] }
+  | { type: 'update'; pages: Page[]; deviceProperties?: DeviceProperties }
   | { type: 'mqtt-upload'; config: MqttConfig; pages: Page[]; device: string }
   | { type: 'export'; pages: Page[]; format: 'jsonl' | 'json' }
   | { type: 'ready' };

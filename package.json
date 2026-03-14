@@ -34,6 +34,9 @@
           },
           {
             "filenamePattern": "*.hasp"
+          },
+          {
+            "filenamePattern": "*.hasp.json"
           }
         ],
         "priority": "option"
@@ -57,6 +60,12 @@
         "category": "openHASP"
       },
       {
+        "command": "openhasp.exportJsonl",
+        "title": "Export as JSONL",
+        "category": "openHASP",
+        "icon": "$(export)"
+      },
+      {
         "command": "openhasp.importTemplate",
         "title": "Import Template",
         "category": "openHASP"
@@ -73,6 +82,11 @@
           "when": "resourceExtname == .jsonl || resourceExtname == .hasp",
           "command": "openhasp.uploadToDevice",
           "group": "navigation"
+        },
+        {
+          "when": "resourceFilename =~ /\\.hasp\\.json$/",
+          "command": "openhasp.exportJsonl",
+          "group": "navigation"
         }
       ],
       "commandPalette": [
@@ -83,6 +97,10 @@
         {
           "command": "openhasp.exportPages",
           "when": "resourceExtname == .jsonl || resourceExtname == .hasp"
+        },
+        {
+          "command": "openhasp.exportJsonl",
+          "when": "resourceFilename =~ /\\.hasp\\.json$/"
         }
       ]
     },

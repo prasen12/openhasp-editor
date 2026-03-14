@@ -4,7 +4,6 @@ import { OpenHASPEditorProvider } from './editorProvider';
 export function activate(context: vscode.ExtensionContext) {
   console.log('openHASP Page Editor extension is now active');
 
-  // Register the custom editor provider
   const editorProvider = new OpenHASPEditorProvider(context);
   context.subscriptions.push(
     vscode.window.registerCustomEditorProvider(
@@ -20,13 +19,11 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-  // Register commands
   context.subscriptions.push(
     vscode.commands.registerCommand('openhasp.openEditor', async () => {
       const editor = vscode.window.activeTextEditor;
       if (editor) {
-        const document = editor.document;
-        await vscode.commands.executeCommand('vscode.openWith', document.uri, OpenHASPEditorProvider.viewType);
+        await vscode.commands.executeCommand('vscode.openWith', editor.document.uri, OpenHASPEditorProvider.viewType);
       } else {
         vscode.window.showErrorMessage('No active editor');
       }
@@ -42,6 +39,21 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('openhasp.exportPages', async () => {
       vscode.window.showInformationMessage('Export will be handled by the editor');
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('openhasp.exportJsonl', async () => {
+      // Find active custom editor document
+      const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
+      const input = activeTab?.input;
+      if (input && typeof input === 'object' && 'uri' in input) {
+        const uri = (input as { uri: vscode.Uri }).uri;
+        const document = await vscode.workspace.openTextDocument(uri);
+        await editorProvider.exportAsJsonl(document);
+      } else {
+        vscode.window.showErrorMessage('No active openHASP document found');
+      }
     })
   );
 
