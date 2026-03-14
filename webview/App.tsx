@@ -1,0 +1,248 @@
+import React, { useEffect, useState } from 'react';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { useEditorStore } from './store/useEditorStore';
+import { useHistoryStore } from './store/useHistoryStore';
+import { vscode } from './utils/vscodeApi';
+import { EditorLayout } from './components/Layout/EditorLayout';
+import { WidgetPalette } from './components/Palette/WidgetPalette';
+import { Canvas } from './components/Canvas/Canvas';
+import { PageManager } from './components/PageManager/PageManager';
+import { PropertiesPanel } from './components/Properties/PropertiesPanel';
+import { WidgetRenderer } from './components/Rendering/WidgetRenderer';
+import { getNextWidgetId, WidgetDefinition } from './config/widgetDefinitions';
+import { Widget } from './types';
+import { findWidgetAtPoint, getWidgetAbsoluteRect, isDescendant } from './utils/widgetHierarchy';
+
+const GRID = 10;
+
+export const App: React.FC = () => {
+  let { pages, setPages, setFileName, isDirty, currentPageId, addWidget, updateWidget, canvasWidth, canvasHeight, setCanvasSize } = useEditorStore();
+  const { pushHistory } = useHistoryStore();
+
+  const [activeCanvasWidget, setActiveCanvasWidget] = useState<Widget | null>(null);
+  const [activePaletteDefinition, setActivePaletteDefinition] = useState<WidgetDefinition | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
+  useEffect(() => {
+    vscode.ready();
+
+    const handleMessage = (event: MessageEvent) => {
+      const message = event.data;
+
+      switch (message.type) {
+        case 'init':
+          setPages(message.pages);
+          setFileName(message.fileName);
+          console.log('Canvas size from VSCode:', message.canvasWidth, message.canvasHeight);
+          setCanvasSize(message.canvasWidth, message.canvasHeight);
+          canvasHeight = message.canvasHeight;
+          canvasWidth = message.canvasWidth;
+          console.log(`Cannvas size ${canvasWidth}x${canvasHeight}`);
+          break;
+
+        case 'documentChanged':
+          setPages(message.pages);
+          break;
+
+        case 'mqttStatus':
+          console.log('MQTT status:', message);
+          break;
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [setPages, setFileName]);
+
+  useEffect(() => {
+    if (isDirty && pages.length > 0) {
+      vscode.updatePages(pages);
+    }
+  }, [pages, isDirty]);
+
+  useEffect(() => {
+    if (pages.length > 0) {
+      const timer = setTimeout(() => {
+        pushHistory(pages);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [pages, pushHistory]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    if (event.active.data.current?.type === 'canvas-widget') {
+      setActiveCanvasWidget(event.active.data.current.widget);
+      setActivePaletteDefinition(null);
+    } else if (event.active.data.current?.type === 'palette-widget') {
+      setActivePaletteDefinition(event.active.data.current.definition);
+      setActiveCanvasWidget(null);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveCanvasWidget(null);
+    setActivePaletteDefinition(null);
+
+    if (!over) return;
+
+    // Dropping from palette onto canvas
+    if (active.data.current?.type === 'palette-widget' && over.id === 'canvas') {
+      const definition = active.data.current.definition as WidgetDefinition;
+      const currentPage = pages.find(p => p.id === currentPageId);
+      if (!currentPage) return;
+
+      const canvasElement = document.querySelector('.canvas') as HTMLElement;
+      if (!canvasElement) return;
+
+      const rect = canvasElement.getBoundingClientRect();
+      const w = (definition.defaultProps.w as number) ?? 50;
+      const h = (definition.defaultProps.h as number) ?? 25;
+
+      // Use final pointer position to determine drop location
+      const finalMouseX = (event.activatorEvent as MouseEvent).clientX + event.delta.x;
+      const finalMouseY = (event.activatorEvent as MouseEvent).clientY + event.delta.y;
+      const dropAbsX = finalMouseX - rect.left - w / 2;
+      const dropAbsY = finalMouseY - rect.top - h / 2;
+      const dropCenterX = finalMouseX - rect.left;
+      const dropCenterY = finalMouseY - rect.top;
+
+      // Check if dropping onto an existing widget (make it a child)
+      const parentWidget = findWidgetAtPoint(dropCenterX, dropCenterY, currentPage.widgets);
+
+      let x: number, y: number, parentid: number | undefined;
+      if (parentWidget) {
+        const parentRect = getWidgetAbsoluteRect(parentWidget.id, currentPage.widgets)!;
+        x = Math.max(0, Math.min((parentWidget.w ?? 100) - w, Math.round((dropAbsX - parentRect.x) / GRID) * GRID));
+        y = Math.max(0, Math.min((parentWidget.h ?? 30) - h, Math.round((dropAbsY - parentRect.y) / GRID) * GRID));
+        parentid = parentWidget.id;
+      } else {
+        x = Math.max(0, Math.min(canvasWidth - w, Math.round(dropAbsX / GRID) * GRID));
+        y = Math.max(0, Math.min(canvasHeight - h, Math.round(dropAbsY / GRID) * GRID));
+        parentid = undefined;
+      }
+
+      const newWidget: Widget = {
+        ...definition.defaultProps,
+        obj: definition.defaultProps.obj!,
+        id: getNextWidgetId(currentPage.widgets),
+        x,
+        y,
+        page: currentPageId,
+        ...(parentid !== undefined ? { parentid } : {}),
+      };
+
+      addWidget(currentPageId, newWidget);
+    }
+
+    // Moving widget on canvas
+    if (active.data.current?.type === 'canvas-widget' && over.id === 'canvas') {
+      const widget = active.data.current.widget as Widget;
+      const pageId = active.data.current.pageId as number;
+      const delta = event.delta;
+      const currentPage = pages.find(p => p.id === pageId);
+      if (!currentPage) return;
+
+      // Compute absolute new position based on current absolute position + drag delta
+      const currentAbsRect = getWidgetAbsoluteRect(widget.id, currentPage.widgets);
+      if (!currentAbsRect) return;
+
+      const absNewX = Math.round((currentAbsRect.x + delta.x) / GRID) * GRID;
+      const absNewY = Math.round((currentAbsRect.y + delta.y) / GRID) * GRID;
+      const dropCenterX = absNewX + (widget.w ?? 100) / 2;
+      const dropCenterY = absNewY + (widget.h ?? 30) / 2;
+
+      // Detect if hovering over a different widget for reparenting
+      const targetWidget = findWidgetAtPoint(dropCenterX, dropCenterY, currentPage.widgets, widget.id);
+      const isCircular = targetWidget ? isDescendant(targetWidget.id, widget.id, currentPage.widgets) : false;
+
+      if (targetWidget && !isCircular && targetWidget.id !== widget.parentid) {
+        // Reparent to new parent, position relative to it
+        const parentRect = getWidgetAbsoluteRect(targetWidget.id, currentPage.widgets)!;
+        const relX = Math.max(0, Math.min((targetWidget.w ?? 100) - (widget.w ?? 100), absNewX - parentRect.x));
+        const relY = Math.max(0, Math.min((targetWidget.h ?? 30) - (widget.h ?? 30), absNewY - parentRect.y));
+        updateWidget(pageId, widget.id, { parentid: targetWidget.id, x: relX, y: relY });
+      } else if (!targetWidget && widget.parentid) {
+        // Dropped onto canvas background — remove from parent
+        const relX = Math.max(0, Math.min(canvasWidth - (widget.w ?? 100), absNewX));
+        const relY = Math.max(0, Math.min(canvasHeight - (widget.h ?? 30), absNewY));
+        updateWidget(pageId, widget.id, { parentid: undefined, x: relX, y: relY });
+      } else if (widget.parentid) {
+        // Move within current parent
+        const parentWidget = currentPage.widgets.find(w => w.id === widget.parentid);
+        const parentRect = getWidgetAbsoluteRect(widget.parentid, currentPage.widgets);
+        if (parentWidget && parentRect) {
+          const relX = Math.max(0, Math.min((parentWidget.w ?? 100) - (widget.w ?? 100), absNewX - parentRect.x));
+          const relY = Math.max(0, Math.min((parentWidget.h ?? 30) - (widget.h ?? 30), absNewY - parentRect.y));
+          updateWidget(pageId, widget.id, { x: relX, y: relY });
+        }
+      } else {
+        // Move within canvas root
+        updateWidget(pageId, widget.id, {
+          x: Math.max(0, Math.min(canvasWidth - (widget.w ?? 100), absNewX)),
+          y: Math.max(0, Math.min(canvasHeight - (widget.h ?? 30), absNewY)),
+        });
+      }
+    }
+  };
+
+  const currentPage = pages.find(p => p.id === currentPageId);
+
+  return (
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <EditorLayout
+        topBar={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontWeight: 600, fontSize: '13px' }}>
+              {currentPage?.comment || currentPage?.name || `Page ${currentPageId}`}
+            </span>
+            {isDirty && <span style={{ fontSize: '11px', opacity: 0.6 }}>• Modified</span>}
+          </div>
+        }
+        leftPanel={
+          <>
+            <PageManager />
+            <div style={{ borderTop: '1px solid var(--vscode-panel-border)', marginTop: '8px' }} />
+            <WidgetPalette />
+          </>
+        }
+        canvas={<Canvas />}
+        rightPanel={<PropertiesPanel />}
+        bottomBar={
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <span>{pages.length} page{pages.length !== 1 ? 's' : ''}</span>
+            <span>•</span>
+            <span>{currentPage?.widgets.length || 0} widget{currentPage?.widgets.length !== 1 ? 's' : ''}</span>
+          </div>
+        }
+      />
+      <DragOverlay>
+        {activeCanvasWidget && (
+          <div style={{ width: activeCanvasWidget.w ?? 100, height: activeCanvasWidget.h ?? 30, opacity: 0.75, pointerEvents: 'none' }}>
+            <WidgetRenderer widget={activeCanvasWidget} />
+          </div>
+        )}
+        {activePaletteDefinition && (
+          <div style={{
+            padding: '4px 10px',
+            background: 'var(--vscode-button-background)',
+            color: 'var(--vscode-button-foreground)',
+            borderRadius: '4px',
+            fontSize: '12px',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}>
+            {activePaletteDefinition.icon} {activePaletteDefinition.name}
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
+  );
+};

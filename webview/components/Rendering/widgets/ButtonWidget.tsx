@@ -1,0 +1,33 @@
+import React from 'react';
+import { Widget } from '../../../types';
+import { decodeUnicodeEscapes, translateLVGLToMDI } from '../../../utils/widgetHierarchy';
+import './Widgets.css';
+
+interface ButtonWidgetProps {
+  widget: Widget;
+}
+
+export const ButtonWidget: React.FC<ButtonWidgetProps> = ({ widget }) => {
+  const style: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+    backgroundColor: widget.bg_color || '#2196F3',
+    color: widget.text_color || '#FFFFFF',
+    border: widget.border_width ? `${widget.border_width}px solid ${widget.border_color || '#000'}` : 'none',
+    borderRadius: widget.radius ? `${widget.radius}px` : '0',
+    display: 'flex',
+    alignItems: widget.align || 'center',
+    justifyContent: widget.justify || 'center',
+    fontSize: `${widget.text_font ?? 14}px`,
+    fontWeight: 500,
+    cursor: 'pointer',
+    userSelect: 'none',
+    fontFamily: "'openHASP Icons', sans-serif",
+  };
+
+  return (
+    <div className="widget-button" style={style}>
+      {translateLVGLToMDI(decodeUnicodeEscapes(widget.text || 'Button'))}
+    </div>
+  );
+};

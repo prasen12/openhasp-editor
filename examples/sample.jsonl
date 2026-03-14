@@ -1,0 +1,15 @@
+{"page":1,"comment":"Home Page"}
+{"id":1,"obj":"label","x":10,"y":10,"w":220,"h":40,"text":"openHASP Editor","align":"center","text_font":24}
+{"id":2,"obj":"btn","x":10,"y":60,"w":100,"h":40,"text":"Button 1","bg_color":"#2196F3"}
+{"id":3,"obj":"btn","x":130,"y":60,"w":100,"h":40,"text":"Button 2","bg_color":"#4CAF50"}
+{"id":4,"obj":"slider","x":10,"y":110,"w":220,"h":20,"min":0,"max":100,"val":50}
+{"id":5,"obj":"label","x":10,"y":140,"w":220,"h":30,"text":"Brightness: 50%","align":"center"}
+
+{"page":2,"comment":"Controls"}
+{"id":1,"obj":"label","x":10,"y":10,"w":220,"h":30,"text":"Control Panel","align":"center","text_font":16}
+{"id":2,"obj":"switch","x":10,"y":50,"w":60,"h":30,"radius":15}
+{"id":3,"obj":"label","x":80,"y":55,"w":150,"h":20,"text":"Living Room Light"}
+{"id":4,"obj":"switch","x":10,"y":90,"w":60,"h":30,"radius":15}
+{"id":5,"obj":"label","x":80,"y":95,"w":150,"h":20,"text":"Bedroom Light"}
+{"id":6,"obj":"slider","x":10,"y":140,"w":220,"h":20,"min":0,"max":255,"val":128}
+{"id":7,"obj":"label","x":10,"y":170,"w":220,"h":20,"text":"Temperature","align":"center"}

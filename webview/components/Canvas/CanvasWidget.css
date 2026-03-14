@@ -1,0 +1,53 @@
+.canvas-widget {
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+.canvas-widget.selected {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+  z-index: 10;
+}
+
+.widget-selection-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: var(--vscode-focusBorder);
+  border: 1px solid white;
+  pointer-events: all;
+  z-index: 11;
+}
+
+.resize-handle-nw {
+  top: -4px;
+  left: -4px;
+  cursor: nw-resize;
+}
+
+.resize-handle-ne {
+  top: -4px;
+  right: -4px;
+  cursor: ne-resize;
+}
+
+.resize-handle-sw {
+  bottom: -4px;
+  left: -4px;
+  cursor: sw-resize;
+}
+
+.resize-handle-se {
+  bottom: -4px;
+  right: -4px;
+  cursor: se-resize;
+}

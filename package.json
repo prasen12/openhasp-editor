@@ -1,0 +1,187 @@
+{
+  "name": "openhasp-editor",
+  "displayName": "openHASP Page Editor",
+  "description": "Visual drag-and-drop editor for creating and editing openHASP pages",
+  "version": "0.1.0",
+  "publisher": "openhasp",
+  "icon": "assets/icon.png",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "openhasp",
+    "hasp",
+    "lvgl",
+    "iot",
+    "gui",
+    "editor"
+  ],
+  "activationEvents": [
+    "onLanguage:jsonl"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "openhasp.pageEditor",
+        "displayName": "openHASP Page Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.jsonl"
+          },
+          {
+            "filenamePattern": "*.hasp"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "commands": [
+      {
+        "command": "openhasp.openEditor",
+        "title": "Open with openHASP Editor",
+        "category": "openHASP"
+      },
+      {
+        "command": "openhasp.uploadToDevice",
+        "title": "Upload to Device",
+        "category": "openHASP",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "openhasp.exportPages",
+        "title": "Export Pages",
+        "category": "openHASP"
+      },
+      {
+        "command": "openhasp.importTemplate",
+        "title": "Import Template",
+        "category": "openHASP"
+      },
+      {
+        "command": "openhasp.saveAsTemplate",
+        "title": "Save as Template",
+        "category": "openHASP"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceExtname == .jsonl || resourceExtname == .hasp",
+          "command": "openhasp.uploadToDevice",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "openhasp.uploadToDevice",
+          "when": "resourceExtname == .jsonl || resourceExtname == .hasp"
+        },
+        {
+          "command": "openhasp.exportPages",
+          "when": "resourceExtname == .jsonl || resourceExtname == .hasp"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "openHASP",
+      "properties": {
+        "openhasp.mqtt.broker": {
+          "type": "string",
+          "default": "mqtt://localhost",
+          "description": "MQTT broker URL"
+        },
+        "openhasp.mqtt.port": {
+          "type": "number",
+          "default": 1883,
+          "description": "MQTT broker port"
+        },
+        "openhasp.mqtt.username": {
+          "type": "string",
+          "default": "",
+          "description": "MQTT username (optional)"
+        },
+        "openhasp.mqtt.password": {
+          "type": "string",
+          "default": "",
+          "description": "MQTT password (optional)"
+        },
+        "openhasp.editor.canvasWidth": {
+          "type": "number",
+          "default": 720,
+          "description": "Canvas width in pixels (display horizontal resolution)"
+        },
+        "openhasp.editor.canvasHeight": {
+          "type": "number",
+          "default": 480,
+          "description": "Canvas height in pixels (display vertical resolution)"
+        },
+        "openhasp.editor.gridSize": {
+          "type": "number",
+          "default": 10,
+          "description": "Grid size for snap-to-grid (in pixels)"
+        },
+        "openhasp.editor.snapToGrid": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable snap-to-grid when dragging widgets"
+        },
+        "openhasp.editor.iconFont": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to a WOFF2/WOFF/TTF font file whose glyphs match the icon codepoints used in your openHASP device firmware. The font is loaded into the canvas preview so that \\uXXXX icon values in widget text render correctly. Example: /path/to/hasp_10_icons.woff2"
+        },
+        "openhasp.templates": {
+          "type": "array",
+          "default": [],
+          "description": "Custom widget templates"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack --devtool source-map",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "font-awesome": "^4.7.0",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/vscode": "^1.75.0",
+    "@typescript-eslint/eslint-plugin": "^5.53.0",
+    "@typescript-eslint/parser": "^5.53.0",
+    "@vscode/test-electron": "^2.2.3",
+    "css-loader": "^6.7.3",
+    "eslint": "^8.34.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "style-loader": "^3.3.1",
+    "ts-loader": "^9.4.2",
+    "typescript": "^4.9.5",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.0.8",
+    "@dnd-kit/sortable": "^7.0.2",
+    "@dnd-kit/utilities": "^3.2.1",
+    "mqtt": "^5.3.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "re-resizable": "^6.9.9",
+    "zustand": "^4.3.6"
+  }
+}

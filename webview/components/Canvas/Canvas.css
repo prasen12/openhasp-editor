@@ -1,0 +1,36 @@
+.canvas-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--vscode-editor-background);
+}
+
+.canvas-viewport {
+  padding: 40px;
+}
+
+.canvas {
+  background-color: #e0e0e0;
+  border: 2px solid var(--vscode-panel-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: visible;
+}
+
+.canvas-empty-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #999;
+  font-size: 13px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.canvas-empty-state p {
+  margin: 0;
+}

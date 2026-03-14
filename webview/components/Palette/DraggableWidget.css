@@ -1,0 +1,34 @@
+.draggable-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: grab;
+  border-radius: 3px;
+  font-size: 12px;
+  background-color: var(--vscode-sideBar-background);
+  color: var(--vscode-foreground);
+  transition: background-color 0.1s;
+}
+
+.draggable-widget:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.draggable-widget:active {
+  cursor: grabbing;
+}
+
+.draggable-widget.dragging {
+  opacity: 0.5;
+}
+
+.widget-icon {
+  width: 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.widget-name {
+  flex: 1;
+}

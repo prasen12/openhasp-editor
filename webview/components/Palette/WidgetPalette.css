@@ -1,0 +1,65 @@
+.widget-palette {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.palette-header {
+  padding: 12px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.palette-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--vscode-foreground);
+}
+
+.palette-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.palette-category {
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  background-color: var(--vscode-sideBarSectionHeader-background);
+  color: var(--vscode-sideBarSectionHeader-foreground);
+}
+
+.category-header:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.category-icon {
+  font-size: 10px;
+  width: 12px;
+}
+
+.category-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.category-count {
+  opacity: 0.6;
+  font-size: 11px;
+}
+
+.category-widgets {
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

@@ -1,0 +1,21 @@
+/* Common widget styles */
+.widget-label,
+.widget-button,
+.widget-slider,
+.widget-switch,
+.widget-gauge,
+.widget-bar,
+.widget-arc,
+.widget-generic {
+  box-sizing: border-box;
+  user-select: none;
+  pointer-events: none;
+}
+
+.widget-button {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.widget-button:active {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}

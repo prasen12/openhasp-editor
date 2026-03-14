@@ -1,0 +1,64 @@
+/*
+ * FontAwesome 4.7 — openHASP/LVGL built-in icon glyphs live in the BMP Private Use Area
+ * (U+E000–U+F8FF). FA4 places its glyphs at exactly that range. Webpack inlines these files
+ * as base64 data URIs so they work inside the VS Code webview sandbox without any network
+ * requests or vscode-resource URI handling. Run `npm install` to populate node_modules.
+ */
+@font-face {
+  font-family: 'openHASP Icons';
+  src: url('../../node_modules/font-awesome/fonts/fontawesome-webfont.woff2') format('woff2'),
+       url('../../node_modules/font-awesome/fonts/fontawesome-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  unicode-range: U+E000-U+F8FF;
+}
+
+/* Global styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'openHASP Icons', var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif);
+  font-size: var(--vscode-font-size, 13px);
+  color: var(--vscode-foreground, #cccccc);
+  background-color: var(--vscode-editor-background, #1e1e1e);
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* VSCode theme fallbacks */
+:root {
+  --vscode-foreground: #cccccc;
+  --vscode-editor-background: #1e1e1e;
+  --vscode-editor-foreground: #d4d4d4;
+  --vscode-panel-border: #3c3c3c;
+  --vscode-button-background: #0e639c;
+  --vscode-button-hoverBackground: #1177bb;
+  --vscode-button-foreground: #ffffff;
+  --vscode-focusBorder: #007acc;
+  --vscode-list-activeSelectionBackground: #094771;
+  --vscode-list-activeSelectionForeground: #ffffff;
+  --vscode-list-hoverBackground: #2a2d2e;
+  --vscode-sideBar-background: #252526;
+  --vscode-sideBarSectionHeader-background: #80808033;
+  --vscode-sideBarSectionHeader-foreground: #cccccc;
+  --vscode-statusBar-background: #007acc;
+  --vscode-statusBar-foreground: #ffffff;
+  --vscode-editorGroupHeader-tabsBackground: #252526;
+  --vscode-scrollbarSlider-background: #79797966;
+  --vscode-scrollbarSlider-hoverBackground: #646464b3;
+  --vscode-scrollbarSlider-activeBackground: #bfbfbf66;
+  --vscode-editorRuler-foreground: #5a5a5a;
+  --vscode-descriptionForeground: #ccccccb3;
+}
