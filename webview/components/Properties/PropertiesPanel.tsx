@@ -5,6 +5,7 @@ import { Widget } from '../../types';
 import { getWidgetAbsoluteRect, isDescendant } from '../../utils/widgetHierarchy';
 import { IconPicker } from '../IconPicker/IconPicker';
 import { IconEntry } from '../../config/iconData';
+import { WIDGET_PROPS } from '../../config/widgetProperties';
 
 const fieldStyle: React.CSSProperties = {
   display: 'flex',
@@ -181,10 +182,11 @@ export const PropertiesPanel: React.FC = () => {
     updateWidget(currentPageId, widget.id, { parentid: newParentId, x: newX, y: newY });
   };
 
-  const hasText = ['btn', 'button', 'label', 'checkbox', 'dropdown', 'textarea', 'spinbox', 'qrcode'].includes(widget.obj);
-  const hasValue = ['slider', 'bar', 'gauge', 'arc', 'linemeter', 'roller'].includes(widget.obj);
+  const hasText = ['btn', 'button', 'label', 'checkbox', 'textarea', 'qrcode'].includes(widget.obj);
   const hasImage = ['image', 'img', 'animimage', 'imgbtn'].includes(widget.obj);
-  const hasOptions = ['dropdown', 'roller', 'btnmatrix'].includes(widget.obj);
+
+  // Widget-specific property sections from config (overrides generic Value/Options)
+  const widgetSections = WIDGET_PROPS[widget.obj] ?? [];
 
   return (
     <div style={{ padding: '12px', overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
@@ -304,33 +306,33 @@ export const PropertiesPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Value range */}
-      {hasValue && (
-        <div style={sectionStyle}>
-          <div style={sectionTitleStyle}>Value</div>
-          <div style={rowStyle}>
-            <Field label="Min" type="number" value={widget.min ?? 0} onChange={v => update('min', v)} />
-            <Field label="Max" type="number" value={widget.max ?? 100} onChange={v => update('max', v)} />
-          </div>
-          <Field label="Value" type="number" value={widget.val ?? 0} min={widget.min ?? 0} max={widget.max ?? 100} onChange={v => update('val', v)} />
-        </div>
-      )}
-
-      {/* Options (dropdown/roller) */}
-      {hasOptions && (
-        <div style={sectionStyle}>
-          <div style={sectionTitleStyle}>Options</div>
-          <Field label="Options (one per line)" type="textarea" value={widget.options ?? ''} onChange={v => update('options', v)} />
-        </div>
-      )}
-
-      {/* Image source */}
-      {hasImage && (
+      {/* Image source (for widgets not covered by widgetSections) */}
+      {hasImage && widgetSections.length === 0 && (
         <div style={sectionStyle}>
           <div style={sectionTitleStyle}>Image</div>
           <Field label="Source" type="text" value={widget.src ?? ''} onChange={v => update('src', v)} />
         </div>
       )}
+
+      {/* Widget-specific sections */}
+      {widgetSections.map(section => (
+        <div key={section.title} style={sectionStyle}>
+          <div style={sectionTitleStyle}>{section.title}</div>
+          {section.props.map(prop => (
+            <div key={prop.key} style={{ marginBottom: '8px' }}>
+              <Field
+                label={prop.label}
+                type={prop.type === 'boolean' ? 'checkbox' : prop.type as any}
+                value={widget[prop.key] ?? prop.default}
+                options={prop.options}
+                min={prop.min}
+                max={prop.max}
+                onChange={v => update(prop.key as keyof Widget, v)}
+              />
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 };
