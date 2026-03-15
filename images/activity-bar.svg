@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+  <!-- Display outline -->
+  <rect x="1" y="3" width="22" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <!-- Stand -->
+  <path d="M8 18 L8 21 L16 21 L16 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="6" y1="21" x2="18" y2="21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Widget blocks inside display -->
+  <rect x="3.5" y="5.5" width="8" height="4" rx="0.8" fill="currentColor" opacity="0.9"/>
+  <rect x="3.5" y="11" width="5" height="4" rx="0.8" fill="currentColor" opacity="0.9"/>
+  <rect x="13" y="5.5" width="7.5" height="9.5" rx="0.8" fill="currentColor" opacity="0.5"/>
+</svg>

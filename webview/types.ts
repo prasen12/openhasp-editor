@@ -11,6 +11,8 @@ export interface Widget {
   id: number;
   obj: WidgetType;
   page?: number;
+  name?: string;
+  description?: string;
   x?: number;
   y?: number;
   w?: number;
@@ -44,6 +46,7 @@ export interface DeviceProperties {
   width: number;
   height: number;
   deviceName: string;
+  description?: string;
   fontOverrideFile?: string;
   fontName?: string;
 }

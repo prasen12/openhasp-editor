@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Background -->
+  <rect width="128" height="128" rx="24" fill="#0D1117"/>
+  <!-- Outer ring subtle -->
+  <rect width="128" height="128" rx="24" fill="none" stroke="#38BDF8" stroke-width="0.6" opacity="0.15"/>
+
+  <!-- Dot grid -->
+  <g opacity="0.18" fill="#38BDF8">
+    <circle cx="18" cy="18" r="1.1"/><circle cx="32" cy="18" r="1.1"/><circle cx="46" cy="18" r="1.1"/><circle cx="60" cy="18" r="1.1"/><circle cx="74" cy="18" r="1.1"/><circle cx="88" cy="18" r="1.1"/><circle cx="102" cy="18" r="1.1"/><circle cx="116" cy="18" r="1.1"/>
+    <circle cx="18" cy="32" r="1.1"/><circle cx="32" cy="32" r="1.1"/><circle cx="46" cy="32" r="1.1"/><circle cx="60" cy="32" r="1.1"/><circle cx="74" cy="32" r="1.1"/><circle cx="88" cy="32" r="1.1"/><circle cx="102" cy="32" r="1.1"/><circle cx="116" cy="32" r="1.1"/>
+    <circle cx="18" cy="46" r="1.1"/><circle cx="32" cy="46" r="1.1"/><circle cx="46" cy="46" r="1.1"/><circle cx="60" cy="46" r="1.1"/><circle cx="74" cy="46" r="1.1"/><circle cx="88" cy="46" r="1.1"/><circle cx="102" cy="46" r="1.1"/><circle cx="116" cy="46" r="1.1"/>
+    <circle cx="18" cy="60" r="1.1"/><circle cx="32" cy="60" r="1.1"/><circle cx="46" cy="60" r="1.1"/><circle cx="60" cy="60" r="1.1"/><circle cx="74" cy="60" r="1.1"/><circle cx="88" cy="60" r="1.1"/><circle cx="102" cy="60" r="1.1"/><circle cx="116" cy="60" r="1.1"/>
+    <circle cx="18" cy="74" r="1.1"/><circle cx="32" cy="74" r="1.1"/><circle cx="46" cy="74" r="1.1"/><circle cx="60" cy="74" r="1.1"/><circle cx="74" cy="74" r="1.1"/><circle cx="88" cy="74" r="1.1"/><circle cx="102" cy="74" r="1.1"/><circle cx="116" cy="74" r="1.1"/>
+    <circle cx="18" cy="88" r="1.1"/><circle cx="32" cy="88" r="1.1"/><circle cx="46" cy="88" r="1.1"/><circle cx="60" cy="88" r="1.1"/><circle cx="74" cy="88" r="1.1"/><circle cx="88" cy="88" r="1.1"/><circle cx="102" cy="88" r="1.1"/><circle cx="116" cy="88" r="1.1"/>
+    <circle cx="18" cy="102" r="1.1"/><circle cx="32" cy="102" r="1.1"/><circle cx="46" cy="102" r="1.1"/><circle cx="60" cy="102" r="1.1"/><circle cx="74" cy="102" r="1.1"/><circle cx="88" cy="102" r="1.1"/><circle cx="102" cy="102" r="1.1"/><circle cx="116" cy="102" r="1.1"/>
+    <circle cx="18" cy="116" r="1.1"/><circle cx="32" cy="116" r="1.1"/><circle cx="46" cy="116" r="1.1"/><circle cx="60" cy="116" r="1.1"/><circle cx="74" cy="116" r="1.1"/><circle cx="88" cy="116" r="1.1"/><circle cx="102" cy="116" r="1.1"/><circle cx="116" cy="116" r="1.1"/>
+  </g>
+
+  <!-- Tall widget (label/slider block) — cyan -->
+  <rect x="13" y="15" width="44" height="58" rx="5" fill="#0F2240" stroke="#38BDF8" stroke-width="1.2"/>
+  <rect x="18" y="22" width="32" height="6" rx="2" fill="#38BDF8" opacity="0.35"/>
+  <rect x="18" y="33" width="22" height="9" rx="3" fill="#38BDF8" opacity="0.85"/>
+  <rect x="18" y="47" width="32" height="4" rx="2" fill="#1E3A5F"/>
+  <rect x="18" y="47" width="20" height="4" rx="2" fill="#38BDF8" opacity="0.75"/>
+  <circle cx="38" cy="49" r="3.5" fill="#38BDF8"/>
+  <rect x="18" y="56" width="18" height="5" rx="2" fill="#334155"/>
+  <rect x="18" y="64" width="18" height="5" rx="2" fill="#334155" opacity="0.5"/>
+
+  <!-- Toggle widget — purple -->
+  <rect x="70" y="15" width="44" height="30" rx="5" fill="#180B2E" stroke="#7C3AED" stroke-width="1.2"/>
+  <rect x="76" y="22" width="30" height="6" rx="2" fill="#7C3AED" opacity="0.4"/>
+  <rect x="79" y="32" width="14" height="9" rx="4.5" fill="#4C1D95"/>
+  <circle cx="87" cy="36.5" r="3.5" fill="#A78BFA"/>
+  <rect x="97" y="33" width="9" height="5" rx="2" fill="#7C3AED" opacity="0.6"/>
+
+  <!-- Arc/gauge widget — green -->
+  <rect x="70" y="53" width="44" height="30" rx="5" fill="#0A1F0A" stroke="#22C55E" stroke-width="1.2"/>
+  <path d="M82 78 A14 14 0 0 1 108 78" fill="none" stroke="#1A3A1A" stroke-width="4" stroke-linecap="round"/>
+  <path d="M82 78 A14 14 0 0 1 100 64" fill="none" stroke="#22C55E" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="100" cy="64" r="2.5" fill="#22C55E"/>
+
+  <!-- Second tall widget placeholder — muted -->
+  <rect x="13" y="82" width="44" height="30" rx="5" fill="#0F1A2E" stroke="#38BDF8" stroke-width="0.8" opacity="0.5"/>
+  <rect x="18" y="90" width="32" height="5" rx="2" fill="#38BDF8" opacity="0.2"/>
+  <rect x="18" y="100" width="20" height="5" rx="2" fill="#38BDF8" opacity="0.15"/>
+
+  <!-- Selection dashed box around tall widget -->
+  <rect x="10" y="12" width="50" height="64" rx="6" fill="none" stroke="#38BDF8" stroke-width="1" stroke-dasharray="3 2" opacity="0.9"/>
+  <!-- Corner handles -->
+  <rect x="6" y="8" width="6" height="6" rx="1.5" fill="#38BDF8"/>
+  <rect x="56" y="8" width="6" height="6" rx="1.5" fill="#38BDF8"/>
+  <rect x="6" y="70" width="6" height="6" rx="1.5" fill="#38BDF8"/>
+  <rect x="56" y="70" width="6" height="6" rx="1.5" fill="#38BDF8"/>
+
+  <!-- Cursor arrow -->
+  <polygon points="92,92 92,112 96,107 100,116 103,115 99,106 105,104" fill="#F8FAFC" opacity="0.95" stroke="#0D1117" stroke-width="0.6"/>
+</svg>

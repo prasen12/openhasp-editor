@@ -123,14 +123,34 @@ const Field: React.FC<FieldProps> = ({ label, type = 'text', value, onChange, op
 };
 
 export const PropertiesPanel: React.FC = () => {
-  const { pages, currentPageId, updateWidget, canvasWidth, canvasHeight } = useEditorStore();
-  const { selectedWidgetIds } = useSelectionStore();
+  const { pages, currentPageId, updateWidget, updatePage, deleteWidget, deleteWidgets, canvasWidth, canvasHeight } = useEditorStore();
+  const { selectedWidgetIds, clearSelection } = useSelectionStore();
   const [showIconPicker, setShowIconPicker] = useState(false);
   const iconBtnRef = useRef<HTMLButtonElement>(null);
 
   const currentPage = pages.find(p => p.id === currentPageId);
   const selectedId = selectedWidgetIds.length === 1 ? selectedWidgetIds[0] : null;
   const widget = selectedId !== null ? currentPage?.widgets.find(w => w.id === selectedId) : null;
+
+  const deleteBtn = (label: string, onClick: () => void) => (
+    <button
+      onClick={onClick}
+      title="Delete selected widget(s)"
+      style={{
+        marginTop: '8px',
+        width: '100%',
+        padding: '5px 0',
+        background: 'var(--vscode-inputValidation-errorBackground, #5a1d1d)',
+        color: 'var(--vscode-errorForeground, #f48771)',
+        border: '1px solid var(--vscode-inputValidation-errorBorder, #be1100)',
+        borderRadius: '3px',
+        fontSize: '12px',
+        cursor: 'pointer',
+      }}
+    >
+      🗑 {label}
+    </button>
+  );
 
   if (selectedWidgetIds.length > 1) {
     return (
@@ -141,19 +161,41 @@ export const PropertiesPanel: React.FC = () => {
         <p style={{ fontSize: '12px', opacity: 0.6 }}>
           {selectedWidgetIds.length} widgets selected
         </p>
+        {deleteBtn(`Delete ${selectedWidgetIds.length} widgets`, () => {
+          deleteWidgets(currentPageId, selectedWidgetIds);
+          clearSelection();
+        })}
       </div>
     );
   }
 
   if (!widget) {
+    // Show page-level properties when no widget is selected
     return (
-      <div style={{ padding: '12px' }}>
-        <h3 style={{ margin: '0 0 8px', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase' }}>
+      <div style={{ padding: '12px', overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
+        <h3 style={{ margin: '0 0 12px', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase' }}>
           Properties
         </h3>
-        <p style={{ fontSize: '12px', opacity: 0.6 }}>
-          Select a widget to edit its properties
-        </p>
+        {currentPage ? (
+          <div style={sectionStyle}>
+            <div style={sectionTitleStyle}>Page</div>
+            <Field
+              label="Name"
+              type="text"
+              value={currentPage.name ?? ''}
+              onChange={v => updatePage(currentPageId, { name: v || undefined })}
+            />
+            <div style={{ height: '8px' }} />
+            <Field
+              label="Comment / Description"
+              type="textarea"
+              value={currentPage.comment ?? ''}
+              onChange={v => updatePage(currentPageId, { comment: v || undefined })}
+            />
+          </div>
+        ) : (
+          <p style={{ fontSize: '12px', opacity: 0.6 }}>Select a widget to edit its properties</p>
+        )}
       </div>
     );
   }
@@ -190,9 +232,35 @@ export const PropertiesPanel: React.FC = () => {
 
   return (
     <div style={{ padding: '12px', overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
-      <h3 style={{ margin: '0 0 12px', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase' }}>
-        {widget.obj} #{widget.id}
-      </h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <h3 style={{ margin: 0, fontSize: '13px', fontWeight: 600, textTransform: 'uppercase' }}>
+          {widget.obj} #{widget.id}
+        </h3>
+        <button
+          onClick={() => { deleteWidget(currentPageId, widget.id); clearSelection(); }}
+          title="Delete widget (Delete)"
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--vscode-errorForeground, #f48771)',
+            cursor: 'pointer',
+            fontSize: '15px',
+            padding: '2px 4px',
+            lineHeight: 1,
+            borderRadius: '3px',
+          }}
+        >
+          🗑
+        </button>
+      </div>
+
+      {/* Identity */}
+      <div style={sectionStyle}>
+        <div style={sectionTitleStyle}>Identity</div>
+        <Field label="Name" type="text" value={widget.name ?? ''} onChange={v => update('name', v || undefined)} />
+        <div style={{ height: '8px' }} />
+        <Field label="Description" type="textarea" value={widget.description ?? ''} onChange={v => update('description', v || undefined)} />
+      </div>
 
       {/* Position & Size */}
       <div style={sectionStyle}>

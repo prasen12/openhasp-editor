@@ -27,6 +27,17 @@ export const DevicePropertiesPanel: React.FC = () => {
       {expanded && (
         <div className="device-props-body">
           <label className="device-props-field">
+            <span>Description</span>
+            <textarea
+              rows={2}
+              value={deviceProperties.description ?? ''}
+              placeholder="Optional description for this design file"
+              onChange={e => update({ description: e.target.value || undefined })}
+              style={{ resize: 'vertical' }}
+            />
+          </label>
+
+          <label className="device-props-field">
             <span>Device Name</span>
             <input
               type="text"

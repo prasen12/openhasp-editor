@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useEditorStore } from './store/useEditorStore';
 import { useHistoryStore } from './store/useHistoryStore';
+import { useSelectionStore } from './store/useSelectionStore';
 import { vscode } from './utils/vscodeApi';
 import { EditorLayout } from './components/Layout/EditorLayout';
 import { WidgetPalette } from './components/Palette/WidgetPalette';
@@ -9,6 +10,7 @@ import { Canvas } from './components/Canvas/Canvas';
 import { PageManager } from './components/PageManager/PageManager';
 import { PropertiesPanel } from './components/Properties/PropertiesPanel';
 import { DevicePropertiesPanel } from './components/DeviceProperties/DevicePropertiesPanel';
+import { LayoutOutline } from './components/LayoutOutline/LayoutOutline';
 import { WidgetRenderer } from './components/Rendering/WidgetRenderer';
 import { getNextWidgetId, WidgetDefinition } from './config/widgetDefinitions';
 import { Widget } from './types';
@@ -17,12 +19,28 @@ import { findWidgetAtPoint, getWidgetAbsoluteRect, isDescendant } from './utils/
 const GRID = 10;
 
 export const App: React.FC = () => {
-  let { pages, setPages, setFileName, isDirty, currentPageId, addWidget, updateWidget,
+  let { pages, setPages, setFileName, isDirty, currentPageId, addWidget, updateWidget, deleteWidgets,
         canvasWidth, canvasHeight, setCanvasSize, deviceProperties, setDeviceProperties, setFontOverrideUri } = useEditorStore();
   const { pushHistory } = useHistoryStore();
+  const { selectedWidgetIds, clearSelection } = useSelectionStore();
 
   const [activeCanvasWidget, setActiveCanvasWidget] = useState<Widget | null>(null);
   const [activePaletteDefinition, setActivePaletteDefinition] = useState<WidgetDefinition | null>(null);
+
+  // Delete selected widgets on Delete / Backspace (skip when focus is in an input)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (selectedWidgetIds.length === 0) return;
+      e.preventDefault();
+      deleteWidgets(currentPageId, selectedWidgetIds);
+      clearSelection();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedWidgetIds, currentPageId, deleteWidgets, clearSelection]);
   const fontStyleRef = useRef<HTMLStyleElement | null>(null);
 
   const sensors = useSensors(
@@ -238,7 +256,7 @@ export const App: React.FC = () => {
         leftPanel={
           <>
             <DevicePropertiesPanel />
-            <div style={{ borderTop: '1px solid var(--vscode-panel-border)', marginTop: '8px' }} />
+            <LayoutOutline />
             <WidgetPalette />
           </>
         }

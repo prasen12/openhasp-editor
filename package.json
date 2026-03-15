@@ -24,6 +24,24 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "openhasp-explorer",
+          "title": "openHASP",
+          "icon": "images/activity-bar.svg"
+        }
+      ]
+    },
+    "views": {
+      "openhasp-explorer": [
+        {
+          "id": "openhasp.filesView",
+          "name": "Design Files",
+          "icon": "images/activity-bar.svg"
+        }
+      ]
+    },
     "customEditors": [
       {
         "viewType": "openhasp.pageEditor",
@@ -74,9 +92,33 @@
         "command": "openhasp.saveAsTemplate",
         "title": "Save as Template",
         "category": "openHASP"
+      },
+      {
+        "command": "openhasp.newDesign",
+        "title": "New Design File",
+        "category": "openHASP",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "openhasp.refreshFilesView",
+        "title": "Refresh",
+        "category": "openHASP",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
+      "view/title": [
+        {
+          "command": "openhasp.newDesign",
+          "when": "view == openhasp.filesView",
+          "group": "navigation"
+        },
+        {
+          "command": "openhasp.refreshFilesView",
+          "when": "view == openhasp.filesView",
+          "group": "navigation"
+        }
+      ],
       "editor/title": [
         {
           "when": "resourceExtname == .jsonl || resourceExtname == .hasp",

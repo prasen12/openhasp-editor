@@ -13,6 +13,10 @@ export interface Widget {
   obj: WidgetType;
   page?: number;
 
+  // Metadata (editor-only, not rendered by openHASP)
+  name?: string;
+  description?: string;
+
   // Layout properties
   x?: number;
   y?: number;
@@ -54,6 +58,7 @@ export interface DeviceProperties {
   width: number;
   height: number;
   deviceName: string;
+  description?: string;
   fontOverrideFile?: string;
   fontName?: string;
 }
