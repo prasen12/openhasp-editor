@@ -167,6 +167,38 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
     });
   }
 
+  public async importJsonl(): Promise<void> {
+    const openUris = await vscode.window.showOpenDialog({
+      filters: { 'JSONL Files': ['jsonl', 'hasp'] },
+      canSelectMany: false,
+      title: 'Select JSONL file to import',
+    });
+    if (!openUris || openUris.length === 0) return;
+
+    const raw = await vscode.workspace.fs.readFile(openUris[0]);
+    const pages = JsonlParser.parse(Buffer.from(raw).toString('utf8'));
+
+    const baseName = path.basename(openUris[0].fsPath).replace(/\.(jsonl|hasp)$/, '');
+    const saveUri = await vscode.window.showSaveDialog({
+      filters: { 'openHASP Design': ['hasp.json'] },
+      defaultUri: vscode.Uri.file(path.join(path.dirname(openUris[0].fsPath), baseName + '.hasp.json')),
+      title: 'Save as design file',
+    });
+    if (!saveUri) return;
+
+    const config = vscode.workspace.getConfiguration('openhasp.editor');
+    const deviceProperties: DeviceProperties = {
+      deviceName: baseName,
+      width: config.get<number>('canvasWidth', 320),
+      height: config.get<number>('canvasHeight', 240),
+    };
+
+    const content = HaspJsonSerializer.serialize(pages, deviceProperties);
+    await vscode.workspace.fs.writeFile(saveUri, Buffer.from(content, 'utf8'));
+    await vscode.commands.executeCommand('vscode.openWith', saveUri, OpenHASPEditorProvider.viewType);
+    vscode.window.showInformationMessage(`Imported as design file: ${path.basename(saveUri.fsPath)}`);
+  }
+
   public async exportAsJsonl(document: vscode.TextDocument): Promise<void> {
     let pages: Page[];
     if (isHaspJsonFile(document)) {

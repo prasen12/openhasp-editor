@@ -84,6 +84,12 @@
         "icon": "$(export)"
       },
       {
+        "command": "openhasp.importJsonl",
+        "title": "Import JSONL as Design File",
+        "category": "openHASP",
+        "icon": "$(combine)"
+      },
+      {
         "command": "openhasp.importTemplate",
         "title": "Import Template",
         "category": "openHASP"
@@ -115,6 +121,11 @@
       "view/title": [
         {
           "command": "openhasp.newDesign",
+          "when": "view == openhasp.filesView",
+          "group": "navigation"
+        },
+        {
+          "command": "openhasp.importJsonl",
           "when": "view == openhasp.filesView",
           "group": "navigation"
         },

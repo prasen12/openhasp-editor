@@ -96,6 +96,12 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('openhasp.importJsonl', async () => {
+      await editorProvider.importJsonl();
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('openhasp.importTemplate', async () => {
       vscode.window.showInformationMessage('Template import will be implemented in a future update');
     })

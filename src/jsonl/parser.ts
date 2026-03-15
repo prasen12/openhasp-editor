@@ -33,9 +33,11 @@ export class JsonlParser {
 
         // Add widget if it has an id and obj type
         if (obj.id !== undefined && obj.obj !== undefined) {
+          const { comment, ...rest } = obj;
           const widget: Widget = {
-            ...obj,
-            page: currentPageId
+            ...rest,
+            page: currentPageId,
+            ...(comment !== undefined ? { description: comment } : {})
           };
           pages.get(currentPageId)!.widgets.push(widget);
 

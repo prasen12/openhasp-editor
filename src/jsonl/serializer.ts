@@ -14,10 +14,13 @@ export class JsonlSerializer {
 
       // Add widgets sorted by ID
       for (const widget of page.widgets.sort((a, b) => a.id - b.id)) {
-        const obj: any = { ...widget };
+        const { page: _page, description, name: _name, ...rest } = widget as any;
+        const obj: any = { ...rest };
 
-        // Remove the page property as it's in the header
-        delete obj.page;
+        // Map editor description to JSONL comment
+        if (description) {
+          obj.comment = description;
+        }
 
         // Remove undefined, null, and empty string properties
         Object.keys(obj).forEach(key => {
@@ -39,10 +42,13 @@ export class JsonlSerializer {
   }
 
   static serializeWidget(widget: Widget): string {
-    const obj: any = { ...widget };
+    const { page: _page, description, name: _name, ...rest } = widget as any;
+    const obj: any = { ...rest };
 
-    // Remove the page property
-    delete obj.page;
+    // Map editor description to JSONL comment
+    if (description) {
+      obj.comment = description;
+    }
 
     // Remove undefined, null, and empty string properties
     Object.keys(obj).forEach(key => {
