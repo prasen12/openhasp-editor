@@ -104,6 +104,11 @@
         "title": "Refresh",
         "category": "openHASP",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "openhasp.navigateToWidget",
+        "title": "Navigate to Widget",
+        "category": "openHASP"
       }
     ],
     "menus": {
@@ -132,6 +137,10 @@
         }
       ],
       "commandPalette": [
+        {
+          "command": "openhasp.navigateToWidget",
+          "when": "false"
+        },
         {
           "command": "openhasp.uploadToDevice",
           "when": "resourceExtname == .jsonl || resourceExtname == .hasp"

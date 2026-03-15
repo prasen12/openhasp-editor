@@ -5,7 +5,8 @@
       "Bash(cat:*)",
       "Bash(ls:*)",
       "Bash(npm run compile:*)",
-      "Bash(find /Volumes/SPCC_1TB/Projects/openhasp-editor/webview -type d -not -path */.*)"
+      "Bash(find /Volumes/SPCC_1TB/Projects/openhasp-editor/webview -type d -not -path */.*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

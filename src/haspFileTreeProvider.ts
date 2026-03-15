@@ -11,7 +11,6 @@ export type ItemKind = 'file' | 'page' | 'widget';
 export class HaspTreeItem extends vscode.TreeItem {
   readonly kind: ItemKind;
   readonly fileUri: vscode.Uri;
-  // page / widget items carry their page's full widget list for child lookup
   readonly pageWidgets?: Widget[];
   readonly widgetId?: number;
 
@@ -27,6 +26,7 @@ export class HaspTreeItem extends vscode.TreeItem {
       pageWidgets?: Widget[];
       widgetId?: number;
       contextValue?: string;
+      command?: vscode.Command;
     }
   ) {
     super(label, collapsible);
@@ -38,21 +38,14 @@ export class HaspTreeItem extends vscode.TreeItem {
     this.pageWidgets = opts?.pageWidgets;
     this.widgetId = opts?.widgetId;
     this.contextValue = opts?.contextValue ?? kind;
-
-    // All items open the file when clicked
-    this.command = {
-      command: 'vscode.openWith',
-      title: 'Open',
-      arguments: [fileUri, OpenHASPEditorProvider.viewType],
-    };
+    this.command = opts?.command;
   }
 }
 
-// ─── Helper: build a label for a widget ──────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function widgetLabel(w: Widget): string {
-  if (w.name) return `${w.obj} — ${w.name}`;
-  return `${w.obj} #${w.id}`;
+  return w.name ? `${w.obj} — ${w.name}` : `${w.obj} #${w.id}`;
 }
 
 function pageLabel(p: Page): string {
@@ -64,33 +57,25 @@ function widgetIcon(obj: string): vscode.ThemeIcon {
   switch (obj) {
     case 'btn':
     case 'button':
-    case 'imgbtn':
-      return new vscode.ThemeIcon('button');
-    case 'label':
-      return new vscode.ThemeIcon('symbol-string');
+    case 'imgbtn':     return new vscode.ThemeIcon('button');
+    case 'label':      return new vscode.ThemeIcon('symbol-string');
     case 'slider':
-    case 'bar':
-      return new vscode.ThemeIcon('grabber');
+    case 'bar':        return new vscode.ThemeIcon('grabber');
     case 'switch':
-    case 'checkbox':
-      return new vscode.ThemeIcon('check');
+    case 'checkbox':   return new vscode.ThemeIcon('check');
     case 'gauge':
     case 'arc':
-    case 'linemeter':
-      return new vscode.ThemeIcon('dial');
+    case 'linemeter':  return new vscode.ThemeIcon('dial');
     case 'obj':
     case 'container':
     case 'cont':
     case 'window':
     case 'tabview':
-    case 'tab':
-      return new vscode.ThemeIcon('symbol-namespace');
+    case 'tab':        return new vscode.ThemeIcon('symbol-namespace');
     case 'image':
     case 'img':
-    case 'animimage':
-      return new vscode.ThemeIcon('file-media');
-    default:
-      return new vscode.ThemeIcon('symbol-variable');
+    case 'animimage':  return new vscode.ThemeIcon('file-media');
+    default:           return new vscode.ThemeIcon('symbol-variable');
   }
 }
 
@@ -101,6 +86,7 @@ export class HaspFileTreeProvider implements vscode.TreeDataProvider<HaspTreeIte
     new vscode.EventEmitter<HaspTreeItem | undefined | null | void>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
+  /** Full tree refresh — call when files are added/deleted or pages change. */
   refresh(): void {
     this._onDidChangeTreeData.fire();
   }
@@ -110,7 +96,8 @@ export class HaspFileTreeProvider implements vscode.TreeDataProvider<HaspTreeIte
   }
 
   async getChildren(element?: HaspTreeItem): Promise<HaspTreeItem[]> {
-    // ── Root: list all *.hasp.json files in the workspace ──────────────────
+
+    // ── Root: all *.hasp.json files in the workspace ────────────────────────
     if (!element) {
       const files = await vscode.workspace.findFiles(
         '**/*.hasp.json',
@@ -118,23 +105,20 @@ export class HaspFileTreeProvider implements vscode.TreeDataProvider<HaspTreeIte
       );
 
       if (files.length === 0) {
-        // Return a placeholder so the view isn't blank
         const placeholder = new HaspTreeItem(
           'No .hasp.json files found',
           vscode.TreeItemCollapsibleState.None,
           'file',
           vscode.Uri.file(''),
+          { contextValue: 'placeholder' }
         );
-        placeholder.command = undefined;
-        placeholder.contextValue = 'placeholder';
         return [placeholder];
       }
 
-      // Sort alphabetically by filename
       files.sort((a, b) => path.basename(a.fsPath).localeCompare(path.basename(b.fsPath)));
 
-      return files.map(uri => {
-        const item = new HaspTreeItem(
+      return files.map(uri =>
+        new HaspTreeItem(
           path.basename(uri.fsPath),
           vscode.TreeItemCollapsibleState.Collapsed,
           'file',
@@ -143,17 +127,22 @@ export class HaspFileTreeProvider implements vscode.TreeDataProvider<HaspTreeIte
             description: vscode.workspace.asRelativePath(path.dirname(uri.fsPath)),
             tooltip: uri.fsPath,
             iconPath: new vscode.ThemeIcon('file-code'),
+            // Opening the file is done via reveal (no command needed at file level)
+            command: {
+              command: 'vscode.openWith',
+              title: 'Open',
+              arguments: [uri, OpenHASPEditorProvider.viewType],
+            },
           }
-        );
-        return item;
-      });
+        )
+      );
     }
 
-    // ── File node: parse and return pages ──────────────────────────────────
+    // ── File → pages ────────────────────────────────────────────────────────
     if (element.kind === 'file') {
       try {
         const document = await vscode.workspace.openTextDocument(element.fileUri);
-        const { pages, deviceProperties } = HaspJsonParser.parse(document.getText());
+        const { pages } = HaspJsonParser.parse(document.getText());
 
         if (pages.length === 0) {
           const empty = new HaspTreeItem(
@@ -161,17 +150,15 @@ export class HaspFileTreeProvider implements vscode.TreeDataProvider<HaspTreeIte
             vscode.TreeItemCollapsibleState.None,
             'page',
             element.fileUri,
+            { contextValue: 'placeholder' }
           );
-          empty.command = undefined;
-          empty.contextValue = 'placeholder';
           return [empty];
         }
 
-        return pages.map(page => {
-          const hasChildren = page.widgets.length > 0;
-          return new HaspTreeItem(
+        return pages.map(page =>
+          new HaspTreeItem(
             pageLabel(page),
-            hasChildren
+            page.widgets.length > 0
               ? vscode.TreeItemCollapsibleState.Collapsed
               : vscode.TreeItemCollapsibleState.None,
             'page',
@@ -181,27 +168,33 @@ export class HaspFileTreeProvider implements vscode.TreeDataProvider<HaspTreeIte
               tooltip: page.comment ?? page.name ?? `Page ${page.id}`,
               iconPath: new vscode.ThemeIcon('layers'),
               pageWidgets: page.widgets,
+              // Navigate to the page (no specific widget)
+              command: {
+                command: 'openhasp.navigateToWidget',
+                title: 'Navigate to page',
+                arguments: [element.fileUri.toString(), page.id, undefined],
+              },
             }
-          );
-        });
-      } catch (e) {
+          )
+        );
+      } catch {
         const errItem = new HaspTreeItem(
           'Failed to parse file',
           vscode.TreeItemCollapsibleState.None,
           'file',
           element.fileUri,
+          { iconPath: new vscode.ThemeIcon('error') }
         );
-        errItem.command = undefined;
-        errItem.iconPath = new vscode.ThemeIcon('error');
         return [errItem];
       }
     }
 
-    // ── Page / widget node: return child widgets ───────────────────────────
+    // ── Page / widget → child widgets ───────────────────────────────────────
     if ((element.kind === 'page' || element.kind === 'widget') && element.pageWidgets) {
-      const parentId = element.kind === 'page' ? undefined : element.widgetId;
       const children = element.pageWidgets.filter(w =>
-        element.kind === 'page' ? !w.parentid : w.parentid === parentId
+        element.kind === 'page'
+          ? !w.parentid
+          : w.parentid === element.widgetId
       );
 
       return children.map(w => {
@@ -219,6 +212,11 @@ export class HaspFileTreeProvider implements vscode.TreeDataProvider<HaspTreeIte
             iconPath: widgetIcon(w.obj),
             pageWidgets: element.pageWidgets,
             widgetId: w.id,
+            command: {
+              command: 'openhasp.navigateToWidget',
+              title: 'Navigate to widget',
+              arguments: [element.fileUri.toString(), w.page, w.id],
+            },
           }
         );
       });

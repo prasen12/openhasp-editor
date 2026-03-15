@@ -87,7 +87,8 @@ export interface MqttConfig {
 export type ToWebviewMessage =
   | { type: 'init'; pages: Page[]; fileName: string; canvasWidth: number; canvasHeight: number; deviceProperties?: DeviceProperties; fontOverrideUri?: string }
   | { type: 'documentChanged'; pages: Page[]; deviceProperties?: DeviceProperties; fontOverrideUri?: string }
-  | { type: 'mqttStatus'; connected: boolean; device?: string };
+  | { type: 'mqttStatus'; connected: boolean; device?: string }
+  | { type: 'navigateTo'; pageId: number; widgetId?: number };
 
 export type ToExtensionMessage =
   | { type: 'update'; pages: Page[]; deviceProperties?: DeviceProperties }

@@ -10,7 +10,6 @@ import { Canvas } from './components/Canvas/Canvas';
 import { PageManager } from './components/PageManager/PageManager';
 import { PropertiesPanel } from './components/Properties/PropertiesPanel';
 import { DevicePropertiesPanel } from './components/DeviceProperties/DevicePropertiesPanel';
-import { LayoutOutline } from './components/LayoutOutline/LayoutOutline';
 import { WidgetRenderer } from './components/Rendering/WidgetRenderer';
 import { getNextWidgetId, WidgetDefinition } from './config/widgetDefinitions';
 import { Widget } from './types';
@@ -19,10 +18,10 @@ import { findWidgetAtPoint, getWidgetAbsoluteRect, isDescendant } from './utils/
 const GRID = 10;
 
 export const App: React.FC = () => {
-  let { pages, setPages, setFileName, isDirty, currentPageId, addWidget, updateWidget, deleteWidgets,
+  let { pages, setPages, setFileName, isDirty, currentPageId, setCurrentPage, addWidget, updateWidget, deleteWidgets,
         canvasWidth, canvasHeight, setCanvasSize, deviceProperties, setDeviceProperties, setFontOverrideUri } = useEditorStore();
   const { pushHistory } = useHistoryStore();
-  const { selectedWidgetIds, clearSelection } = useSelectionStore();
+  const { selectedWidgetIds, clearSelection, selectWidget } = useSelectionStore();
 
   const [activeCanvasWidget, setActiveCanvasWidget] = useState<Widget | null>(null);
   const [activePaletteDefinition, setActivePaletteDefinition] = useState<WidgetDefinition | null>(null);
@@ -110,6 +109,14 @@ export const App: React.FC = () => {
 
         case 'mqttStatus':
           console.log('MQTT status:', message);
+          break;
+
+        case 'navigateTo':
+          setCurrentPage(message.pageId);
+          clearSelection();
+          if (message.widgetId !== undefined) {
+            selectWidget(message.widgetId, false);
+          }
           break;
       }
     };
@@ -256,7 +263,7 @@ export const App: React.FC = () => {
         leftPanel={
           <>
             <DevicePropertiesPanel />
-            <LayoutOutline />
+            <div style={{ borderTop: '1px solid var(--vscode-panel-border)', marginTop: '8px' }} />
             <WidgetPalette />
           </>
         }

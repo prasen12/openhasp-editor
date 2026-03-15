@@ -13,7 +13,30 @@ function isHaspJsonFile(document: vscode.TextDocument): boolean {
 export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
   public static readonly viewType = 'openhasp.pageEditor';
 
+  // Map of document URI → open webview panel (for navigation)
+  private readonly _panels = new Map<string, vscode.WebviewPanel>();
+
+  // Pending navigations for files not yet open
+  private readonly _pendingNavigation = new Map<string, { pageId: number; widgetId?: number }>();
+
+  // Event fired whenever the editor sends an 'update' (pages changed in memory)
+  private readonly _onDidChangePagesForUri = new vscode.EventEmitter<vscode.Uri>();
+  public readonly onDidChangePagesForUri = this._onDidChangePagesForUri.event;
+
   constructor(private readonly context: vscode.ExtensionContext) {}
+
+  /** Send a navigate-to message to the webview for the given file. Opens it first if needed. */
+  public navigateTo(uri: vscode.Uri, pageId: number, widgetId?: number): void {
+    const key = uri.toString();
+    const panel = this._panels.get(key);
+    if (panel) {
+      panel.reveal(undefined, false);
+      panel.webview.postMessage({ type: 'navigateTo', pageId, widgetId });
+    } else {
+      this._pendingNavigation.set(key, { pageId, widgetId });
+      vscode.commands.executeCommand('vscode.openWith', uri, OpenHASPEditorProvider.viewType);
+    }
+  }
 
   public async resolveCustomTextEditor(
     document: vscode.TextDocument,
@@ -102,14 +125,24 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
       }
     };
 
+    // Track this panel so we can send messages to it later (e.g. navigateTo)
+    this._panels.set(document.uri.toString(), webviewPanel);
+
     webviewPanel.webview.onDidReceiveMessage(async (message: ToExtensionMessage) => {
       switch (message.type) {
         case 'ready':
           webviewPanel.webview.postMessage(buildInitMessage(document.getText()));
+          // Send any pending navigation that was queued before the panel was ready
+          const nav = this._pendingNavigation.get(document.uri.toString());
+          if (nav) {
+            this._pendingNavigation.delete(document.uri.toString());
+            webviewPanel.webview.postMessage({ type: 'navigateTo', pageId: nav.pageId, widgetId: nav.widgetId });
+          }
           break;
 
         case 'update':
           await this.updateDocument(document, message.pages, message.deviceProperties, isHaspJson);
+          this._onDidChangePagesForUri.fire(document.uri);
           break;
 
         case 'mqtt-upload':
@@ -130,6 +163,7 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
 
     webviewPanel.onDidDispose(() => {
       changeDocumentSubscription.dispose();
+      this._panels.delete(document.uri.toString());
     });
   }
 

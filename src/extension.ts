@@ -21,12 +21,27 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Watch for *.hasp.json file changes so the tree stays up to date
+  // Refresh tree in real-time whenever the editor sends an 'update' (pages changed)
+  context.subscriptions.push(
+    editorProvider.onDidChangePagesForUri(() => treeProvider.refresh())
+  );
+
+  // Watch for *.hasp.json file create/delete so the file list stays current
   const watcher = vscode.workspace.createFileSystemWatcher('**/*.hasp.json');
   watcher.onDidCreate(() => treeProvider.refresh());
   watcher.onDidDelete(() => treeProvider.refresh());
-  watcher.onDidChange(() => treeProvider.refresh());
   context.subscriptions.push(watcher);
+
+  // Navigate to a specific page/widget inside an open editor
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'openhasp.navigateToWidget',
+      (uriString: string, pageId: number, widgetId?: number) => {
+        const uri = vscode.Uri.parse(uriString);
+        editorProvider.navigateTo(uri, pageId, widgetId);
+      }
+    )
+  );
 
   context.subscriptions.push(
     vscode.window.registerCustomEditorProvider(
