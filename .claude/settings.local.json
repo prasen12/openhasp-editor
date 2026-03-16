@@ -8,7 +8,8 @@
       "Bash(find /Volumes/SPCC_1TB/Projects/openhasp-editor/webview -type d -not -path */.*)",
       "Bash(npx tsc:*)",
       "Bash(find /Volumes/SPCC_1TB/Projects/openhasp-editor -name configuration.yaml -o -name *home*assistant*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm uninstall:*)"
     ]
   }
 }

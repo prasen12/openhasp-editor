@@ -154,13 +154,7 @@ None! Phase 2 is stable and working.
 - Template library
 - Save/load templates
 
-### Phase 6: MQTT Integration
-- MQTT client
-- Device discovery
-- Direct device upload
-- Real-time device preview
-
-### Phase 7: Polish
+### Phase 6: Polish
 - Full test coverage
 - Performance optimization
 - Advanced features

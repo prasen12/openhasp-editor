@@ -46,10 +46,6 @@ class VSCodeAPIWrapper {
     this.postMessage({ type: 'update', pages, deviceProperties });
   }
 
-  public uploadToDevice(config: any, pages: Page[], device: string): void {
-    this.postMessage({ type: 'mqtt-upload', config, pages, device });
-  }
-
   public exportPages(pages: Page[], format: 'jsonl' | 'json'): void {
     this.postMessage({ type: 'export', pages, format });
   }

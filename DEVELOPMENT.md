@@ -67,8 +67,8 @@ We have successfully completed Phase 1 of the openHASP Page Editor VSCode extens
 - **History Store**: Undo/redo with 50-operation limit
 
 #### ✅ Webview Communication
-- Extension → Webview messages (init, documentChanged, mqttStatus)
-- Webview → Extension messages (update, mqtt-upload, export, ready)
+- Extension → Webview messages (init, documentChanged, navigateTo)
+- Webview → Extension messages (update, export, ready)
 - Automatic state synchronization
 
 ### Architecture Overview
@@ -250,7 +250,6 @@ templates/    - Built-in widget templates (to be added)
 - `zustand` - State management
 - `@dnd-kit/core` - Drag and drop
 - `re-resizable` - Widget resizing
-- `mqtt` - MQTT client (for device uploads)
 
 ### Dev Dependencies
 - `typescript` - Type checking

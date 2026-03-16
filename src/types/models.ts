@@ -77,21 +77,12 @@ export interface Template {
   widgets: Widget[];
 }
 
-export interface MqttConfig {
-  broker: string;
-  port: number;
-  username?: string;
-  password?: string;
-}
-
 export type ToWebviewMessage =
   | { type: 'init'; pages: Page[]; fileName: string; canvasWidth: number; canvasHeight: number; deviceProperties?: DeviceProperties; fontOverrideUri?: string }
   | { type: 'documentChanged'; pages: Page[]; deviceProperties?: DeviceProperties; fontOverrideUri?: string }
-  | { type: 'mqttStatus'; connected: boolean; device?: string }
   | { type: 'navigateTo'; pageId: number; widgetId?: number };
 
 export type ToExtensionMessage =
   | { type: 'update'; pages: Page[]; deviceProperties?: DeviceProperties }
-  | { type: 'mqtt-upload'; config: MqttConfig; pages: Page[]; device: string }
   | { type: 'export'; pages: Page[]; format: 'jsonl' | 'json' }
   | { type: 'ready' };

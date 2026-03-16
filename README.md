@@ -6,12 +6,16 @@ A Visual Studio Code extension that provides a graphical drag-and-drop editor fo
 
 - **Visual Page Editor** - Drag-and-drop interface for designing openHASP pages
 - **Widget Palette** - 40+ supported openHASP widgets (buttons, sliders, gauges, etc.)
-- **Property Inspector** - Edit widget properties through user-friendly forms
+- **Property Inspector** - Widget-specific property sections for detailed customization
 - **Multi-Page Management** - Create and manage multiple pages
 - **Visual Preview** - See how your pages will look on the device
-- **Template Library** - Pre-built components for common use cases
-- **MQTT Integration** - Upload pages directly to openHASP devices
 - **JSONL Support** - Native support for openHASP's JSONL format
+- **Design Files** - Rich `.hasp.json` design format with device properties
+- **JSONL Import** - Import existing `.jsonl` files as design files
+- **JSONL Export** - Export design files back to `.jsonl` for device deployment
+- **openHASP Explorer** - Activity bar view for browsing design files
+- **Home Assistant Config** - Generate HA configuration from your design files
+- **Widget Navigation** - Jump directly to specific pages and widgets
 
 ## Supported Widgets
 
@@ -50,7 +54,7 @@ A Visual Studio Code extension that provides a graphical drag-and-drop editor fo
 
 ### Opening the Editor
 
-1. Open a `.jsonl` file in VSCode
+1. Open a `.jsonl` or `.hasp.json` file in VSCode
 2. Right-click the editor and select "Open with openHASP Editor"
 3. Or use the command palette: `openHASP: Open with openHASP Editor`
 
@@ -61,12 +65,17 @@ A Visual Studio Code extension that provides a graphical drag-and-drop editor fo
 3. Select widgets to edit their properties in the inspector
 4. Save the file to persist changes
 
-### Uploading to Device
+### Importing a JSONL File
 
-1. Click the upload button in the toolbar
-2. Configure your MQTT broker settings
-3. Select your openHASP device
-4. Click "Upload" to send pages to the device
+Use the openHASP Explorer in the activity bar and click the import button, or run `openHASP: Import JSONL as Design File` from the command palette. This converts a plain `.jsonl` file into a `.hasp.json` design file with full editor support.
+
+### Exporting to JSONL
+
+Click the export button in the editor title bar or run `openHASP: Export as JSONL` to produce a `.jsonl` file ready for deployment to an openHASP device.
+
+### Generating Home Assistant Configuration
+
+Right-click a design file in the openHASP Explorer and select "Generate Home Assistant Config", or run `openHASP: Generate Home Assistant Config` from the command palette.
 
 ## Configuration
 
@@ -74,10 +83,8 @@ Configure the extension in VSCode settings:
 
 ```json
 {
-  "openhasp.mqtt.broker": "mqtt://localhost",
-  "openhasp.mqtt.port": 1883,
-  "openhasp.mqtt.username": "",
-  "openhasp.mqtt.password": "",
+  "openhasp.editor.canvasWidth": 720,
+  "openhasp.editor.canvasHeight": 480,
   "openhasp.editor.gridSize": 10,
   "openhasp.editor.snapToGrid": true
 }
@@ -138,43 +145,29 @@ openhasp-editor/
 - [x] React app with Zustand stores
 - [x] Basic webview communication
 
-### Phase 2: Basic Editor (In Progress)
-- [ ] Widget palette with all widgets
-- [ ] Canvas with grid overlay
-- [ ] Drag-drop from palette to canvas
-- [ ] Basic widget renderers
-- [ ] Widget selection
+### Phase 2: Basic Editor ✅
+- [x] Widget palette with 17 widgets
+- [x] Canvas with grid overlay
+- [x] Drag-drop from palette to canvas
+- [x] Basic widget renderers
+- [x] Widget selection
 
-### Phase 3: Property Editing
-- [ ] Property inspector panel
-- [ ] Dynamic property forms
-- [ ] Property validation
-- [ ] Real-time updates
+### Phase 3: Property Editing ✅
+- [x] Property inspector panel
+- [x] Widget-specific property sections
+- [x] Real-time updates
 
-### Phase 4: Advanced Features
-- [ ] Undo/redo system
-- [ ] Multi-selection
-- [ ] Page management
-- [ ] Keyboard shortcuts
-- [ ] Copy/paste/duplicate
+### Phase 4: Advanced Features ✅
+- [x] JSONL import/export
+- [x] Design file format (`.hasp.json`)
+- [x] openHASP Explorer view
+- [x] Home Assistant config generation
+- [x] Widget navigation
 
-### Phase 5: Preview & Templates
-- [ ] Visual preview panel
-- [ ] Widget renderers for all types
-- [ ] Template library
-- [ ] Save/load templates
-
-### Phase 6: MQTT Integration
-- [ ] MQTT client
-- [ ] Device discovery
-- [ ] Upload command
-- [ ] Progress notifications
-
-### Phase 7: Polish & Testing
-- [ ] Validation and error handling
-- [ ] UI/UX improvements
-- [ ] Unit tests
-- [ ] Device testing
+### Phase 5: Polish & Testing
+- [ ] Full test coverage
+- [ ] Performance optimization
+- [ ] Additional widget renderers
 - [ ] Documentation
 
 ## Contributing

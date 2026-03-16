@@ -107,10 +107,6 @@ export const App: React.FC = () => {
           }
           break;
 
-        case 'mqttStatus':
-          console.log('MQTT status:', message);
-          break;
-
         case 'navigateTo':
           setCurrentPage(message.pageId);
           clearSelection();

@@ -145,10 +145,6 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
           this._onDidChangePagesForUri.fire(document.uri);
           break;
 
-        case 'mqtt-upload':
-          await this.handleMqttUpload(message.config, message.pages, message.device);
-          break;
-
         case 'export':
           await this.handleExport(message);
           break;
@@ -237,10 +233,6 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
 
     edit.replace(document.uri, new vscode.Range(0, 0, document.lineCount, 0), content);
     await vscode.workspace.applyEdit(edit);
-  }
-
-  private async handleMqttUpload(_config: any, _pages: Page[], device: string): Promise<void> {
-    vscode.window.showInformationMessage(`MQTT upload not yet implemented. Would upload to ${device}`);
   }
 
   private async handleExport(message: { type: 'export'; pages: Page[]; format: 'jsonl' | 'json' }): Promise<void> {

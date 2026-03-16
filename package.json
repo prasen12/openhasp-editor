@@ -159,7 +159,7 @@
           "when": "view == openhasp.filesView && viewItem == file",
           "group": "inline@1"
         },
-                {
+        {
           "command": "openhasp.generateHAConfig",
           "when": "view == openhasp.filesView && viewItem == file",
           "group": "inline@2"
@@ -191,26 +191,6 @@
     "configuration": {
       "title": "openHASP",
       "properties": {
-        "openhasp.mqtt.broker": {
-          "type": "string",
-          "default": "mqtt://localhost",
-          "description": "MQTT broker URL"
-        },
-        "openhasp.mqtt.port": {
-          "type": "number",
-          "default": 1883,
-          "description": "MQTT broker port"
-        },
-        "openhasp.mqtt.username": {
-          "type": "string",
-          "default": "",
-          "description": "MQTT username (optional)"
-        },
-        "openhasp.mqtt.password": {
-          "type": "string",
-          "default": "",
-          "description": "MQTT password (optional)"
-        },
         "openhasp.editor.canvasWidth": {
           "type": "number",
           "default": 720,
@@ -256,7 +236,6 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "font-awesome": "^4.7.0",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
@@ -268,6 +247,7 @@
     "@vscode/test-electron": "^2.2.3",
     "css-loader": "^6.7.3",
     "eslint": "^8.34.0",
+    "font-awesome": "^4.7.0",
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
     "style-loader": "^3.3.1",
@@ -280,10 +260,9 @@
     "@dnd-kit/core": "^6.0.8",
     "@dnd-kit/sortable": "^7.0.2",
     "@dnd-kit/utilities": "^3.2.1",
-    "mqtt": "^5.3.5",
+    "re-resizable": "^6.9.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "re-resizable": "^6.9.9",
     "zustand": "^4.3.6"
   }
 }
