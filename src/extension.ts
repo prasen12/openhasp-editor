@@ -1,7 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { OpenHASPEditorProvider } from './editorProvider';
-import { HaspFileTreeProvider } from './haspFileTreeProvider';
+import { HaspFileTreeProvider, HaspTreeItem } from './haspFileTreeProvider';
+import { HaspJsonParser } from './haspJson/parser';
+import { generateHAConfig } from './haConfigGenerator';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('openHASP Page Editor extension is now active');
@@ -99,6 +101,60 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('openhasp.importJsonl', async () => {
       await editorProvider.importJsonl();
     })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'openhasp.generateHAConfig',
+      async (treeItem?: HaspTreeItem) => {
+        let sourceUri: vscode.Uri | undefined;
+        if (treeItem?.kind === 'file' && treeItem.fileUri) {
+          sourceUri = treeItem.fileUri;
+        } else {
+          const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
+          const input = activeTab?.input;
+          if (input && typeof input === 'object' && 'uri' in input) {
+            const uri = (input as { uri: vscode.Uri }).uri;
+            if (uri.fsPath.endsWith('.hasp.json')) {
+              sourceUri = uri;
+            }
+          }
+        }
+
+        if (!sourceUri) {
+          vscode.window.showErrorMessage(
+            'No openHASP design file selected. Right-click a .hasp.json file in the explorer or open one in the editor.'
+          );
+          return;
+        }
+
+        let pages, deviceProperties;
+        try {
+          const document = await vscode.workspace.openTextDocument(sourceUri);
+          ({ pages, deviceProperties } = HaspJsonParser.parse(document.getText()));
+        } catch {
+          vscode.window.showErrorMessage(`Failed to parse ${path.basename(sourceUri.fsPath)}`);
+          return;
+        }
+
+        const nodeName = deviceProperties.deviceName.toLowerCase().replace(/\s+/g, '_');
+        const saveUri = await vscode.window.showSaveDialog({
+          filters: { 'YAML Files': ['yaml', 'yml'], 'All Files': ['*'] },
+          defaultUri: vscode.Uri.file(
+            path.join(path.dirname(sourceUri.fsPath), `${nodeName}_config.yaml`)
+          ),
+          title: 'Save Home Assistant Configuration',
+        });
+        if (!saveUri) return;
+
+        const content = generateHAConfig(deviceProperties, pages);
+        await vscode.workspace.fs.writeFile(saveUri, Buffer.from(content, 'utf8'));
+        await vscode.commands.executeCommand('vscode.open', saveUri);
+        vscode.window.showInformationMessage(
+          `Generated HA config: ${path.basename(saveUri.fsPath)}`
+        );
+      }
+    )
   );
 
   context.subscriptions.push(

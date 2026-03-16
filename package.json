@@ -115,6 +115,12 @@
         "command": "openhasp.navigateToWidget",
         "title": "Navigate to Widget",
         "category": "openHASP"
+      },
+      {
+        "command": "openhasp.generateHAConfig",
+        "title": "Generate Home Assistant Config",
+        "category": "openHASP",
+        "icon": "$(gear)"
       }
     ],
     "menus": {
@@ -147,22 +153,38 @@
           "group": "navigation"
         }
       ],
+      "view/item/context": [
+        {
+          "command": "openhasp.exportJsonl",
+          "when": "view == openhasp.filesView && viewItem == file",
+          "group": "inline@1"
+        },
+                {
+          "command": "openhasp.generateHAConfig",
+          "when": "view == openhasp.filesView && viewItem == file",
+          "group": "inline@2"
+        }
+      ],
       "commandPalette": [
         {
           "command": "openhasp.navigateToWidget",
           "when": "false"
         },
         {
+          "command": "openhasp.generateHAConfig",
+          "when": "resourceFilename =~ /\\.hasp\\.json$/"
+        },
+        {
           "command": "openhasp.uploadToDevice",
-          "when": "resourceExtname == .jsonl || resourceExtname == .hasp"
+          "when": "resourceExtname == .hasp.json"
         },
         {
           "command": "openhasp.exportPages",
-          "when": "resourceExtname == .jsonl || resourceExtname == .hasp"
+          "when": "resourceExtname == .hasp.json"
         },
         {
           "command": "openhasp.exportJsonl",
-          "when": "resourceFilename =~ /\\.hasp\\.json$/"
+          "when": "resourceExtname == .hasp.json"
         }
       ]
     },
