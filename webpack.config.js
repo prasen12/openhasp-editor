@@ -11,7 +11,10 @@ const extensionConfig = {
     libraryTarget: 'commonjs2'
   },
   externals: {
-    vscode: 'commonjs vscode'
+    vscode: 'commonjs vscode',
+    // Optional native add-ons used by the 'ws' package for performance — not required
+    bufferutil: 'commonjs bufferutil',
+    'utf-8-validate': 'commonjs utf-8-validate',
   },
   resolve: {
     extensions: ['.ts', '.js']

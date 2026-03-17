@@ -155,14 +155,19 @@
       ],
       "view/item/context": [
         {
-          "command": "openhasp.exportJsonl",
+          "command": "openhasp.uploadToDevice",
           "when": "view == openhasp.filesView && viewItem == file",
           "group": "inline@1"
         },
         {
-          "command": "openhasp.generateHAConfig",
+          "command": "openhasp.exportJsonl",
           "when": "view == openhasp.filesView && viewItem == file",
           "group": "inline@2"
+        },
+        {
+          "command": "openhasp.generateHAConfig",
+          "when": "view == openhasp.filesView && viewItem == file",
+          "group": "inline@3"
         }
       ],
       "commandPalette": [
@@ -220,6 +225,26 @@
           "type": "array",
           "default": [],
           "description": "Custom widget templates"
+        },
+        "openhasp.mqtt.host": {
+          "type": "string",
+          "default": "localhost",
+          "description": "MQTT broker hostname or IP address"
+        },
+        "openhasp.mqtt.port": {
+          "type": "number",
+          "default": 1883,
+          "description": "MQTT broker port"
+        },
+        "openhasp.mqtt.username": {
+          "type": "string",
+          "default": "",
+          "description": "MQTT broker username (leave blank if not required)"
+        },
+        "openhasp.mqtt.password": {
+          "type": "string",
+          "default": "",
+          "description": "MQTT broker password (leave blank if not required)"
         }
       }
     }
@@ -260,6 +285,7 @@
     "@dnd-kit/core": "^6.0.8",
     "@dnd-kit/sortable": "^7.0.2",
     "@dnd-kit/utilities": "^3.2.1",
+    "mqtt": "^5.15.0",
     "re-resizable": "^6.9.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

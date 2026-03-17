@@ -4,6 +4,8 @@ import { OpenHASPEditorProvider } from './editorProvider';
 import { HaspFileTreeProvider, HaspTreeItem } from './haspFileTreeProvider';
 import { HaspJsonParser } from './haspJson/parser';
 import { generateHAConfig } from './haConfigGenerator';
+import { getMqttConfig, publishToDevice } from './mqttPublisher';
+import { JsonlSerializer } from './jsonl/serializer';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('openHASP Page Editor extension is now active');
@@ -71,9 +73,72 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('openhasp.uploadToDevice', async () => {
-      vscode.window.showInformationMessage('MQTT upload will be implemented in a future update');
-    })
+    vscode.commands.registerCommand(
+      'openhasp.uploadToDevice',
+      async (treeItem?: HaspTreeItem) => {
+        // Resolve the source .hasp.json file
+        let sourceUri: vscode.Uri | undefined;
+        if (treeItem?.kind === 'file' && treeItem.fileUri) {
+          sourceUri = treeItem.fileUri;
+        } else {
+          const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
+          const input = activeTab?.input;
+          if (input && typeof input === 'object' && 'uri' in input) {
+            const uri = (input as { uri: vscode.Uri }).uri;
+            if (uri.fsPath.endsWith('.hasp.json')) {
+              sourceUri = uri;
+            }
+          }
+        }
+
+        if (!sourceUri) {
+          vscode.window.showErrorMessage(
+            'No openHASP design file selected. Right-click a .hasp.json file in the explorer or open one in the editor.'
+          );
+          return;
+        }
+
+        let pages, deviceProperties;
+        try {
+          const document = await vscode.workspace.openTextDocument(sourceUri);
+          ({ pages, deviceProperties } = HaspJsonParser.parse(document.getText()));
+        } catch {
+          vscode.window.showErrorMessage(`Failed to parse ${path.basename(sourceUri.fsPath)}`);
+          return;
+        }
+
+        const mqttConfig = getMqttConfig();
+        if (!mqttConfig.host) {
+          vscode.window.showErrorMessage(
+            'MQTT host is not configured. Set openhasp.mqtt.host in Settings.'
+          );
+          return;
+        }
+
+        const jsonlContent = JsonlSerializer.serialize(pages);
+        const deviceName = deviceProperties.deviceName;
+
+        await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: `Publishing to ${deviceName} via MQTT`,
+            cancellable: false,
+          },
+          async (progress) => {
+            try {
+              await publishToDevice(deviceName, jsonlContent, mqttConfig, progress);
+              vscode.window.showInformationMessage(
+                `Successfully published to ${deviceName} (${mqttConfig.host}:${mqttConfig.port})`
+              );
+            } catch (err) {
+              vscode.window.showErrorMessage(
+                `MQTT publish failed: ${err instanceof Error ? err.message : String(err)}`
+              );
+            }
+          }
+        );
+      }
+    )
   );
 
   context.subscriptions.push(
