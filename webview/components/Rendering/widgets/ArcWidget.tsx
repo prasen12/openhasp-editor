@@ -20,8 +20,8 @@ export const ArcWidget: React.FC<ArcWidgetProps> = ({ widget }) => {
     alignItems: 'center',
     justifyContent: 'center'
   };
-
-  const radius = 40;
+  widget.radius = widget.radius ?? 40; // Set default radius if not provided
+  const radius = widget.radius;
   const circumference = 2 * Math.PI * radius;
   const arcLength = (270 / 360) * circumference; // 270 degree arc
   const filledLength = (percentage / 100) * arcLength;
@@ -31,11 +31,11 @@ export const ArcWidget: React.FC<ArcWidgetProps> = ({ widget }) => {
       <svg width="100%" height="100%" viewBox="0 0 100 100">
         {/* Background arc */}
         <circle
-          cx="50"
+          cx="100"
           cy="50"
           r={radius}
           fill="none"
-          stroke="#e0e0e0"
+          stroke={widget.line_color || widget.bg_color || '#2196F3'}
           strokeWidth={lineWidth}
           strokeDasharray={`${arcLength} ${circumference}`}
           strokeDashoffset={-circumference / 8}
@@ -44,10 +44,10 @@ export const ArcWidget: React.FC<ArcWidgetProps> = ({ widget }) => {
 
         {/* Value arc */}
         <circle
-          cx="50"
+          cx="100"
           cy="50"
           r={radius}
-          fill="none"
+          fill="#e1400f"
           stroke={widget.line_color || widget.bg_color || '#2196F3'}
           strokeWidth={lineWidth}
           strokeLinecap="round"
