@@ -1,6 +1,7 @@
 import React from 'react';
 import { Widget } from '../../../types';
 import { decodeUnicodeEscapes, translateLVGLToMDI } from '../../../utils/widgetHierarchy';
+// @ts-ignore: CSS module declaration is not available in this workspace
 import './Widgets.css';
 
 interface ButtonWidgetProps {
