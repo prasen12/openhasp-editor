@@ -5,6 +5,8 @@ import { HaspJsonParser } from './haspJson/parser';
 import { HaspJsonSerializer } from './haspJson/serializer';
 import { Page, DeviceProperties, ToWebviewMessage, ToExtensionMessage } from './types/models';
 import * as path from 'path';
+import * as fs from 'fs';
+import { decodeLvglBinFileToDataUri } from './lvgl/lvglBinDecoder';
 
 function isHaspJsonFile(document: vscode.TextDocument): boolean {
   return document.uri.fsPath.endsWith('.hasp.json');
@@ -48,6 +50,7 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
     // Determine font paths: from settings (icon font) and from document (font override)
     const editorConfig = vscode.workspace.getConfiguration('openhasp.editor');
     const iconFontPath = editorConfig.get<string>('iconFont', '').trim();
+    const imagesRootPath = editorConfig.get<string>('imagesRoot', '').trim();
 
     // Parse document to get device properties (for font override path)
     let fontOverridePath = '';
@@ -65,6 +68,9 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
     }
     if (fontOverridePath) {
       resourceRoots.push(vscode.Uri.file(path.dirname(fontOverridePath)));
+    }
+    if (imagesRootPath) {
+      resourceRoots.push(vscode.Uri.file(imagesRootPath));
     }
 
     webviewPanel.webview.options = {
@@ -86,6 +92,46 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
       }
     };
 
+    // Decoded LVGL .bin → PNG data URI cache for this panel, keyed by file path + mtime + size
+    // so edits to the source .bin file on disk are picked up without re-decoding on every keystroke.
+    const binImageCache = new Map<string, string>();
+
+    // Resolve widget "src" values (e.g. "L:/image.png") to webview-loadable URIs by
+    // stripping the openHASP drive prefix and joining onto the configured images root.
+    // LVGL ".bin" images are raw pixel data the browser can't decode natively, so those
+    // are decoded to PNG data URIs here instead of being handed to the webview as-is.
+    const resolveImageUris = (pages: Page[]): Record<string, string> => {
+      if (!imagesRootPath) return {};
+      const uris: Record<string, string> = {};
+      for (const page of pages) {
+        for (const widget of page.widgets) {
+          const src = (widget as { src?: string }).src;
+          if (!src || uris[src] || !/^L:/i.test(src)) continue;
+          const relativePath = src.replace(/^L:\/?/i, '');
+          const filePath = path.join(imagesRootPath, relativePath);
+          try {
+            if (/\.bin$/i.test(relativePath)) {
+              const stat = fs.statSync(filePath);
+              const cacheKey = `${filePath}:${stat.mtimeMs}:${stat.size}`;
+              let dataUri = binImageCache.get(cacheKey);
+              if (!dataUri) {
+                const decoded = decodeLvglBinFileToDataUri(filePath);
+                if (!decoded) continue; // unsupported format; falls back to placeholder
+                dataUri = decoded;
+                binImageCache.set(cacheKey, dataUri);
+              }
+              uris[src] = dataUri;
+              continue;
+            }
+            uris[src] = webviewPanel.webview.asWebviewUri(vscode.Uri.file(filePath)).toString();
+          } catch {
+            // leave unresolved; the widget falls back to a placeholder
+          }
+        }
+      }
+      return uris;
+    };
+
     const buildInitMessage = (text: string): ToWebviewMessage => {
       if (isHaspJson) {
         const { pages, deviceProperties } = HaspJsonParser.parse(text);
@@ -98,15 +144,18 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
           canvasHeight: deviceProperties.height ?? config.get<number>('canvasHeight', 480),
           deviceProperties,
           fontOverrideUri: getFontOverrideUri(deviceProperties),
+          imageUris: resolveImageUris(pages),
         };
       } else {
         const config = vscode.workspace.getConfiguration('openhasp.editor');
+        const pages = JsonlParser.parse(text);
         return {
           type: 'init',
-          pages: JsonlParser.parse(text),
+          pages,
           fileName: path.basename(document.uri.fsPath),
           canvasWidth: config.get<number>('canvasWidth', 720),
           canvasHeight: config.get<number>('canvasHeight', 480),
+          imageUris: resolveImageUris(pages),
         };
       }
     };
@@ -119,9 +168,11 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
           pages,
           deviceProperties,
           fontOverrideUri: getFontOverrideUri(deviceProperties),
+          imageUris: resolveImageUris(pages),
         };
       } else {
-        return { type: 'documentChanged', pages: JsonlParser.parse(text) };
+        const pages = JsonlParser.parse(text);
+        return { type: 'documentChanged', pages, imageUris: resolveImageUris(pages) };
       }
     };
 
@@ -265,8 +316,8 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
     const isDev = this.context.extensionMode === vscode.ExtensionMode.Development;
 
     const csp = isDev
-      ? `default-src 'none'; connect-src ${webview.cspSource} ws://localhost:8097; img-src ${webview.cspSource} https:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' http://localhost:8097; font-src ${webview.cspSource} data:;`
-      : `default-src 'none'; connect-src ${webview.cspSource}; img-src ${webview.cspSource} https:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; font-src ${webview.cspSource} data:;`;
+      ? `default-src 'none'; connect-src ${webview.cspSource} ws://localhost:8097; img-src ${webview.cspSource} https: data:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' http://localhost:8097; font-src ${webview.cspSource} data:;`
+      : `default-src 'none'; connect-src ${webview.cspSource}; img-src ${webview.cspSource} https: data:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; font-src ${webview.cspSource} data:;`;
 
     let iconFontFace = '';
     if (iconFontPath) {

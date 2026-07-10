@@ -5,30 +5,40 @@ import { Widget } from '../../types';
 import { useSelectionStore } from '../../store/useSelectionStore';
 import { WidgetRenderer } from '../Rendering/WidgetRenderer';
 import { getChildWidgets } from '../../utils/widgetHierarchy';
+import { useResize, ResizeDirection } from '../../hooks/useResize';
 import './CanvasWidget.css';
 
 interface CanvasWidgetProps {
   widget: Widget;
   pageId: number;
   allWidgets: Widget[];
+  /** False for widgets inherited from the Page 0 overlay layer — shown but not selectable/editable from other pages. */
+  interactive?: boolean;
 }
 
-export const CanvasWidget: React.FC<CanvasWidgetProps> = ({ widget, pageId, allWidgets }) => {
+export const CanvasWidget: React.FC<CanvasWidgetProps> = ({ widget, pageId, allWidgets, interactive = true }) => {
   const { selectWidget, isSelected } = useSelectionStore();
-  const selected = isSelected(widget.id);
+  const selected = interactive && isSelected(widget.id);
+  const { startResize } = useResize(widget.id, pageId);
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `widget-${widget.id}`,
+    id: `widget-${pageId}-${widget.id}`,
     data: {
       type: 'canvas-widget',
       widget,
       pageId
-    }
+    },
+    disabled: !interactive
   });
 
   const handleClick = (e: React.MouseEvent) => {
+    if (!interactive) return;
     e.stopPropagation();
     selectWidget(widget.id, e.shiftKey);
+  };
+
+  const handleResizePointerDown = (direction: ResizeDirection) => (e: React.PointerEvent) => {
+    startResize(direction, e);
   };
 
   const childWidgets = getChildWidgets(widget.id, allWidgets);
@@ -40,7 +50,7 @@ export const CanvasWidget: React.FC<CanvasWidgetProps> = ({ widget, pageId, allW
     width: widget.w || 100,
     height: widget.h || 30,
     transform: CSS.Translate.toString(transform),
-    cursor: isDragging ? 'grabbing' : 'grab',
+    cursor: interactive ? (isDragging ? 'grabbing' : 'grab') : 'default',
     opacity: isDragging ? 0.5 : 1,
     overflow: childWidgets.length > 0 ? 'hidden' : undefined,
   };
@@ -51,21 +61,25 @@ export const CanvasWidget: React.FC<CanvasWidgetProps> = ({ widget, pageId, allW
       style={style}
       className={`canvas-widget ${selected ? 'selected' : ''}`}
       onClick={handleClick}
-      {...listeners}
-      {...attributes}
+      {...(interactive ? listeners : undefined)}
+      {...(interactive ? attributes : undefined)}
     >
       <WidgetRenderer widget={widget} />
 
       {childWidgets.map(child => (
-        <CanvasWidget key={child.id} widget={child} pageId={pageId} allWidgets={allWidgets} />
+        <CanvasWidget key={child.id} widget={child} pageId={pageId} allWidgets={allWidgets} interactive={interactive} />
       ))}
 
       {selected && (
         <div className="widget-selection-overlay">
-          <div className="resize-handle resize-handle-nw" />
-          <div className="resize-handle resize-handle-ne" />
-          <div className="resize-handle resize-handle-sw" />
-          <div className="resize-handle resize-handle-se" />
+          <div className="resize-handle resize-handle-nw" onPointerDown={handleResizePointerDown('nw')} />
+          <div className="resize-handle resize-handle-n" onPointerDown={handleResizePointerDown('n')} />
+          <div className="resize-handle resize-handle-ne" onPointerDown={handleResizePointerDown('ne')} />
+          <div className="resize-handle resize-handle-e" onPointerDown={handleResizePointerDown('e')} />
+          <div className="resize-handle resize-handle-se" onPointerDown={handleResizePointerDown('se')} />
+          <div className="resize-handle resize-handle-s" onPointerDown={handleResizePointerDown('s')} />
+          <div className="resize-handle resize-handle-sw" onPointerDown={handleResizePointerDown('sw')} />
+          <div className="resize-handle resize-handle-w" onPointerDown={handleResizePointerDown('w')} />
         </div>
       )}
     </div>

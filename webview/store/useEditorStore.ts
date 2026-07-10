@@ -10,6 +10,7 @@ interface EditorState {
   canvasHeight: number;
   deviceProperties: DeviceProperties | null;
   fontOverrideUri: string;
+  imageUris: Record<string, string>;
 
   setPages: (pages: Page[]) => void;
   setFileName: (fileName: string) => void;
@@ -17,8 +18,10 @@ interface EditorState {
   setCanvasSize: (width: number, height: number) => void;
   setDeviceProperties: (props: DeviceProperties) => void;
   setFontOverrideUri: (uri: string) => void;
+  setImageUris: (uris: Record<string, string>) => void;
 
   addPage: () => void;
+  addOverlayPage: () => void;
   deletePage: (pageId: number) => void;
   updatePage: (pageId: number, updates: Partial<Page>) => void;
 
@@ -40,6 +43,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   canvasHeight: 480,
   deviceProperties: null,
   fontOverrideUri: '',
+  imageUris: {},
 
   setPages: (pages: Page[]) => {
     set({ pages, isDirty: false });
@@ -59,6 +63,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setFontOverrideUri: (uri: string) => set({ fontOverrideUri: uri }),
 
+  setImageUris: (uris: Record<string, string>) => set({ imageUris: uris }),
+
   addPage: () => {
     const pages = get().pages;
     const maxId = pages.length > 0 ? Math.max(...pages.map(p => p.id)) : 0;
@@ -68,6 +74,20 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       comment: `Page ${maxId + 1}`
     };
     set({ pages: [...pages, newPage], currentPageId: newPage.id, isDirty: true });
+  },
+
+  addOverlayPage: () => {
+    const pages = get().pages;
+    if (pages.some(p => p.id === 0)) {
+      set({ currentPageId: 0 });
+      return;
+    }
+    const newPage: Page = {
+      id: 0,
+      widgets: [],
+      comment: 'Overlay (all pages)'
+    };
+    set({ pages: [...pages, newPage], currentPageId: 0, isDirty: true });
   },
 
   deletePage: (pageId: number) => {

@@ -18,14 +18,21 @@
   pointer-events: none;
 }
 
+/* Corner handles */
 .resize-handle {
   position: absolute;
-  width: 8px;
-  height: 8px;
   background-color: var(--vscode-focusBorder);
   border: 1px solid white;
   pointer-events: all;
   z-index: 11;
+}
+
+.resize-handle-nw,
+.resize-handle-ne,
+.resize-handle-sw,
+.resize-handle-se {
+  width: 8px;
+  height: 8px;
 }
 
 .resize-handle-nw {
@@ -50,4 +57,39 @@
   bottom: -4px;
   right: -4px;
   cursor: se-resize;
+}
+
+/* Edge handles */
+.resize-handle-n,
+.resize-handle-s {
+  height: 4px;
+  left: 12px;
+  right: 12px;
+}
+
+.resize-handle-e,
+.resize-handle-w {
+  width: 4px;
+  top: 12px;
+  bottom: 12px;
+}
+
+.resize-handle-n {
+  top: -2px;
+  cursor: n-resize;
+}
+
+.resize-handle-s {
+  bottom: -2px;
+  cursor: s-resize;
+}
+
+.resize-handle-e {
+  right: -2px;
+  cursor: e-resize;
+}
+
+.resize-handle-w {
+  left: -2px;
+  cursor: w-resize;
 }

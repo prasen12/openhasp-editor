@@ -14,12 +14,13 @@ import { WidgetRenderer } from './components/Rendering/WidgetRenderer';
 import { getNextWidgetId, WidgetDefinition } from './config/widgetDefinitions';
 import { Widget } from './types';
 import { findWidgetAtPoint, getWidgetAbsoluteRect, isDescendant } from './utils/widgetHierarchy';
+import { getPageLabel } from './utils/pageLabel';
 
 const GRID = 10;
 
 export const App: React.FC = () => {
   let { pages, setPages, setFileName, isDirty, currentPageId, setCurrentPage, addWidget, updateWidget, deleteWidgets,
-        canvasWidth, canvasHeight, setCanvasSize, deviceProperties, setDeviceProperties, setFontOverrideUri } = useEditorStore();
+        canvasWidth, canvasHeight, setCanvasSize, deviceProperties, setDeviceProperties, setFontOverrideUri, setImageUris } = useEditorStore();
   const { pushHistory } = useHistoryStore();
   const { selectedWidgetIds, clearSelection, selectWidget } = useSelectionStore();
 
@@ -93,6 +94,9 @@ export const App: React.FC = () => {
             setFontOverrideUri(message.fontOverrideUri);
             applyFontOverride(message.fontOverrideUri, message.deviceProperties?.fontName);
           }
+          if (message.imageUris !== undefined) {
+            setImageUris(message.imageUris);
+          }
           break;
 
         case 'documentChanged':
@@ -104,6 +108,9 @@ export const App: React.FC = () => {
           if (message.fontOverrideUri !== undefined) {
             setFontOverrideUri(message.fontOverrideUri);
             applyFontOverride(message.fontOverrideUri, message.deviceProperties?.fontName);
+          }
+          if (message.imageUris !== undefined) {
+            setImageUris(message.imageUris);
           }
           break;
 
@@ -251,7 +258,7 @@ export const App: React.FC = () => {
         topBar={
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontWeight: 600, fontSize: '13px' }}>
-              {currentPage?.comment || currentPage?.name || `Page ${currentPageId}`}
+              {currentPage ? getPageLabel(currentPage) : `Page ${currentPageId}`}
             </span>
             {isDirty && <span style={{ fontSize: '11px', opacity: 0.6 }}>• Modified</span>}
           </div>

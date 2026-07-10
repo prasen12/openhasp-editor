@@ -94,7 +94,7 @@ export function generateHAConfig(deviceProperties: DeviceProperties, pages: Page
   ];
 
   for (const page of pages) {
-    const pageName = page.name ?? page.comment ?? `Page ${page.id}`;
+    const pageName = page.id === 0 ? 'Overlay (all pages)' : (page.name ?? page.comment ?? `Page ${page.id}`);
     lines.push(`  #####################################`);
     lines.push(`  # Page ${page.id} \u2014 ${pageName}`);
     lines.push(`  #####################################`);

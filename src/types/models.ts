@@ -78,8 +78,8 @@ export interface Template {
 }
 
 export type ToWebviewMessage =
-  | { type: 'init'; pages: Page[]; fileName: string; canvasWidth: number; canvasHeight: number; deviceProperties?: DeviceProperties; fontOverrideUri?: string }
-  | { type: 'documentChanged'; pages: Page[]; deviceProperties?: DeviceProperties; fontOverrideUri?: string }
+  | { type: 'init'; pages: Page[]; fileName: string; canvasWidth: number; canvasHeight: number; deviceProperties?: DeviceProperties; fontOverrideUri?: string; imageUris?: Record<string, string> }
+  | { type: 'documentChanged'; pages: Page[]; deviceProperties?: DeviceProperties; fontOverrideUri?: string; imageUris?: Record<string, string> }
   | { type: 'navigateTo'; pageId: number; widgetId?: number };
 
 export type ToExtensionMessage =

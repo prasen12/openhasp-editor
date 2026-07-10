@@ -6,6 +6,7 @@ import { getWidgetAbsoluteRect, isDescendant } from '../../utils/widgetHierarchy
 import { IconPicker } from '../IconPicker/IconPicker';
 import { IconEntry } from '../../config/iconData';
 import { WIDGET_PROPS } from '../../config/widgetProperties';
+import { isOverlayPage } from '../../utils/pageLabel';
 
 const fieldStyle: React.CSSProperties = {
   display: 'flex',
@@ -179,6 +180,11 @@ export const PropertiesPanel: React.FC = () => {
         {currentPage ? (
           <div style={sectionStyle}>
             <div style={sectionTitleStyle}>Page</div>
+            {isOverlayPage(currentPage) && (
+              <p style={{ fontSize: '11px', opacity: 0.7, margin: '0 0 10px' }}>
+                Overlay page — its widgets are shown on top of every other page.
+              </p>
+            )}
             <Field
               label="Name"
               type="text"

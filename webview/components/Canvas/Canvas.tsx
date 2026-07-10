@@ -20,6 +20,11 @@ export const Canvas: React.FC = () => {
   const allWidgets = currentPage?.widgets || [];
   const rootWidgets = getRootWidgets(allWidgets);
 
+  // Page 0 is the overlay page — its widgets are shown (read-only) on top of every other page.
+  const overlayPage = currentPageId !== 0 ? pages.find(p => p.id === 0) : undefined;
+  const overlayWidgets = overlayPage?.widgets || [];
+  const overlayRootWidgets = getRootWidgets(overlayWidgets);
+
   const handleCanvasClick = (e: React.MouseEvent) => {
     // Clear selection if clicking on canvas background
     if (e.target === e.currentTarget) {
@@ -46,8 +51,16 @@ export const Canvas: React.FC = () => {
             <CanvasWidget key={widget.id} widget={widget} pageId={currentPageId} allWidgets={allWidgets} />
           ))}
 
+          {overlayRootWidgets.length > 0 && (
+            <div className="canvas-overlay-layer">
+              {overlayRootWidgets.map(widget => (
+                <CanvasWidget key={`overlay-${widget.id}`} widget={widget} pageId={0} allWidgets={overlayWidgets} interactive={false} />
+              ))}
+            </div>
+          )}
+
           {/* Empty state */}
-          {allWidgets.length === 0 && (
+          {allWidgets.length === 0 && overlayWidgets.length === 0 && (
             <div className="canvas-empty-state">
               <p>Drag widgets from the palette to get started</p>
             </div>

@@ -49,6 +49,7 @@ function widgetLabel(w: Widget): string {
 }
 
 function pageLabel(p: Page): string {
+  if (p.id === 0) return 'Page 0 (Overlay)';
   const title = p.name || p.comment;
   return title ? `Page ${p.id}: ${title}` : `Page ${p.id}`;
 }

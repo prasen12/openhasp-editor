@@ -7,6 +7,7 @@ import { SwitchWidget } from './widgets/SwitchWidget';
 import { GaugeWidget } from './widgets/GaugeWidget';
 import { BarWidget } from './widgets/BarWidget';
 import { ArcWidget } from './widgets/ArcWidget';
+import { ImageWidget } from './widgets/ImageWidget';
 import { GenericWidget } from './widgets/GenericWidget';
 
 interface WidgetRendererProps {
@@ -30,6 +31,9 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({ widget }) => {
       return <BarWidget widget={widget} />;
     case 'arc':
       return <ArcWidget widget={widget} />;
+    case 'image':
+    case 'img':
+      return <ImageWidget widget={widget} />;
     default:
       return <GenericWidget widget={widget} />;
   }

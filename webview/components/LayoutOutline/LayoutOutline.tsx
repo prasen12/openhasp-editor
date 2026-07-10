@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useEditorStore } from '../../store/useEditorStore';
 import { useSelectionStore } from '../../store/useSelectionStore';
-import { Widget, Page } from '../../types';
+import { Widget } from '../../types';
+import { getPageLabel, sortPages } from '../../utils/pageLabel';
 
 const nodeStyle = (depth: number, isSelected: boolean, isPage: boolean): React.CSSProperties => ({
   display: 'flex',
@@ -26,11 +27,6 @@ const nodeStyle = (depth: number, isSelected: boolean, isPage: boolean): React.C
 function widgetLabel(w: Widget): string {
   if (w.name) return `${w.obj} — ${w.name}`;
   return `${w.obj} #${w.id}`;
-}
-
-function pageLabel(p: Page): string {
-  const title = p.name || p.comment;
-  return title ? `Page ${p.id}: ${title}` : `Page ${p.id}`;
 }
 
 interface WidgetNodeProps {
@@ -129,7 +125,7 @@ export const LayoutOutline: React.FC = () => {
 
       {expanded && (
         <div style={{ paddingBottom: '4px', maxHeight: '280px', overflowY: 'auto' }}>
-          {pages.map(page => {
+          {sortPages(pages).map(page => {
             const rootWidgets = page.widgets.filter(w => !w.parentid);
             const isActive = page.id === currentPageId;
             const open = isPageExpanded(page.id);
@@ -154,7 +150,7 @@ export const LayoutOutline: React.FC = () => {
                   </span>
                   <span style={{ opacity: 0.5, fontSize: '10px', flexShrink: 0 }}>▣</span>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {pageLabel(page)}
+                    {getPageLabel(page)}
                   </span>
                   <span style={{ marginLeft: 'auto', opacity: 0.4, fontSize: '10px', flexShrink: 0 }}>
                     {page.widgets.length}

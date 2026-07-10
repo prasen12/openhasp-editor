@@ -221,6 +221,11 @@
           "default": "",
           "description": "Absolute path to a WOFF2/WOFF/TTF font file whose glyphs match the icon codepoints used in your openHASP device firmware. The font is loaded into the canvas preview so that \\uXXXX icon values in widget text render correctly. Example: /path/to/hasp_10_icons.woff2"
         },
+        "openhasp.editor.imagesRoot": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to a local folder that mirrors the root of your openHASP device's LittleFS storage. Image widget \"src\" values such as \"L:/image.png\" or \"L:/image.bin\" are resolved against this folder so the canvas preview can render the actual image. LVGL \".bin\" images (true color, true color with alpha, true color chroma-keyed, indexed 8-bit, and alpha 8-bit) are decoded and rendered directly. Example: /path/to/device-littlefs"
+        },
         "openhasp.templates": {
           "type": "array",
           "default": [],
