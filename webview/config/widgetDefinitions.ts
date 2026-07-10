@@ -262,13 +262,13 @@ export const widgetDefinitions: Record<string, WidgetDefinition> = {
   },
 
   image: {
-    type: 'image',
+    type: 'img',
     name: 'Image',
     category: 'Graphics',
     icon: '🖼',
     description: 'Display image',
     defaultProps: {
-      obj: 'image',
+      obj: 'img',
       x: 10,
       y: 10,
       w: 100,

@@ -4,7 +4,7 @@ export type WidgetType =
   | 'textarea' | 'spinbox' | 'cpicker' | 'keyboard'
   | 'label' | 'gauge' | 'bar' | 'linemeter' | 'led' | 'arc' | 'spinner' | 'chart' | 'datetime'
   | 'dropdown' | 'roller' | 'list' | 'table' | 'calendar' | 'menu'
-  | 'line' | 'image' | 'img' | 'animimage' | 'canvas' | 'mask' | 'qrcode'
+  | 'line' | 'img' | 'animimage' | 'canvas' | 'mask' | 'qrcode'
   | 'alarm' | 'page' | 'span';
 
 export interface Widget {
