@@ -1,4 +1,5 @@
 import { Page, Widget } from '../types/models';
+import { optionsTextToArray } from './optionsFormat';
 
 export class JsonlSerializer {
   static serialize(pages: Page[]): string {
@@ -20,6 +21,10 @@ export class JsonlSerializer {
         // Map editor description to JSONL comment
         if (description) {
           obj.comment = description;
+        }
+
+        if ((obj.obj === 'btnmatrix' || obj.obj === 'msgbox') && typeof obj.options === 'string') {
+          obj.options = optionsTextToArray(obj.options, obj.obj);
         }
 
         // Remove undefined, null, and empty string properties
@@ -48,6 +53,10 @@ export class JsonlSerializer {
     // Map editor description to JSONL comment
     if (description) {
       obj.comment = description;
+    }
+
+    if ((obj.obj === 'btnmatrix' || obj.obj === 'msgbox') && typeof obj.options === 'string') {
+      obj.options = optionsTextToArray(obj.options, obj.obj);
     }
 
     // Remove undefined, null, and empty string properties

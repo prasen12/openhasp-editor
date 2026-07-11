@@ -1,4 +1,5 @@
 import { Page, Widget } from '../types/models';
+import { optionsArrayToText } from './optionsFormat';
 
 export class JsonlParser {
   static parse(content: string): Page[] {
@@ -39,6 +40,9 @@ export class JsonlParser {
             page: currentPageId,
             ...(comment !== undefined ? { description: comment } : {})
           };
+          if ((widget.obj === 'btnmatrix' || widget.obj === 'msgbox') && Array.isArray(widget.options)) {
+            widget.options = optionsArrayToText(widget.options, widget.obj);
+          }
           pages.get(currentPageId)!.widgets.push(widget);
 
           // Log non-ASCII characters in text so the correct icon font can be identified.

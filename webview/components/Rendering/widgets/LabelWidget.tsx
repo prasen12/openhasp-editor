@@ -1,6 +1,7 @@
 import React from 'react';
 import { Widget } from '../../../types';
 import { decodeUnicodeEscapes, translateLVGLToMDI } from '../../../utils/widgetHierarchy';
+import { getTextStyleExtras, getBackgroundStyle } from '../../../utils/styleProps';
 import './Widgets.css';
 
 interface LabelWidgetProps {
@@ -21,9 +22,10 @@ export const LabelWidget: React.FC<LabelWidgetProps> = ({ widget }) => {
     overflow: 'hidden',
     whiteSpace: 'nowrap',
     textOverflow: 'ellipsis',
-    backgroundColor: widget.bg_color || 'transparent',
     borderRadius: widget.radius ? `${widget.radius}px` : '0',
     fontFamily: "'openHASP Icons', sans-serif",
+    ...getBackgroundStyle(widget, 'transparent'),
+    ...getTextStyleExtras(widget),
   };
 
   return (

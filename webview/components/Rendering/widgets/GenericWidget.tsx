@@ -1,5 +1,6 @@
 import React from 'react';
 import { Widget } from '../../../types';
+import { getBackgroundStyle } from '../../../utils/styleProps';
 import './Widgets.css';
 
 interface GenericWidgetProps {
@@ -10,7 +11,7 @@ export const GenericWidget: React.FC<GenericWidgetProps> = ({ widget }) => {
   const style: React.CSSProperties = {
     width: '100%',
     height: '100%',
-    backgroundColor: widget.bg_color || '#f0f0f0',
+    ...getBackgroundStyle(widget, '#f0f0f0'),
     border: `1px dashed #999`,
     borderRadius: widget.radius || 0,
     display: 'flex',

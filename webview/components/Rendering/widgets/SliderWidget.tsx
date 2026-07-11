@@ -1,5 +1,6 @@
 import React from 'react';
 import { Widget } from '../../../types';
+import { colorWithOpacity } from '../../../utils/color';
 import './Widgets.css';
 
 interface SliderWidgetProps {
@@ -35,7 +36,7 @@ export const SliderWidget: React.FC<SliderWidgetProps> = ({ widget }) => {
     top: 0,
     height: '100%',
     width: `${percentage}%`,
-    backgroundColor: widget.bg_color || '#2196F3',
+    backgroundColor: colorWithOpacity(widget.bg_color, widget.bg_opa, '#2196F3'),
     borderRadius: '3px'
   };
 
@@ -46,7 +47,7 @@ export const SliderWidget: React.FC<SliderWidgetProps> = ({ widget }) => {
     transform: 'translateY(-50%)',
     width: '16px',
     height: '16px',
-    backgroundColor: widget.bg_color || '#2196F3',
+    backgroundColor: colorWithOpacity(widget.bg_color, widget.bg_opa, '#2196F3'),
     borderRadius: '50%',
     border: '2px solid white',
     boxShadow: '0 1px 3px rgba(0,0,0,0.3)'

@@ -228,6 +228,50 @@ export const WIDGET_PROPS: Partial<Record<WidgetType, PropSection[]>> = {
       title: 'Tab View',
       props: [
         { key: 'val', label: 'Active Tab Index', type: 'number', default: 0, min: 0 },
+        {
+          key: 'btn_pos',
+          label: 'Tab Button Position',
+          type: 'select',
+          default: 'top',
+          options: ['none', 'top', 'bottom', 'left', 'right'],
+        },
+      ],
+    },
+  ],
+
+  // ── tab ───────────────────────────────────────────────────────────────────
+  tab: [
+    {
+      title: 'Tab',
+      props: [
+        { key: 'text', label: 'Tab Label', type: 'text', default: 'Tab' },
+      ],
+    },
+  ],
+
+  // ── btnmatrix ─────────────────────────────────────────────────────────────
+  btnmatrix: [
+    {
+      title: 'Button Matrix',
+      props: [
+        { key: 'options', label: 'Buttons (one row per line, comma-separated)', type: 'textarea', default: 'Btn1,Btn2,Btn3' },
+        { key: 'align', label: 'Text Align', type: 'select', default: 'center', options: ['left', 'center', 'right'] },
+        { key: 'toggle', label: 'Toggle mode', type: 'boolean', default: false },
+        { key: 'one_check', label: 'One Check (single-select)', type: 'boolean', default: false },
+        { key: 'val', label: 'Active Button Index (-1 = none)', type: 'number', default: 0, min: -1 },
+      ],
+    },
+  ],
+
+  // ── msgbox ────────────────────────────────────────────────────────────────
+  msgbox: [
+    {
+      title: 'Message Box',
+      props: [
+        { key: 'text', label: 'Message', type: 'textarea', default: 'Message text' },
+        { key: 'options', label: 'Buttons (one per line)', type: 'textarea', default: 'OK' },
+        { key: 'modal', label: 'Modal', type: 'boolean', default: false },
+        { key: 'auto_close', label: 'Auto Close (ms, 0 = never)', type: 'number', default: 0, min: 0 },
       ],
     },
   ],
@@ -292,6 +336,9 @@ export const WIDGET_PROPS: Partial<Record<WidgetType, PropSection[]>> = {
         { key: 'auto_size', label: 'Auto Size', type: 'boolean', default: true },
         { key: 'zoom', label: 'Zoom (256 = 100%)', type: 'number', default: 256, min: 1 },
         { key: 'angle', label: 'Angle (0.1° steps)', type: 'number', default: 0, min: 0, max: 3600 },
+        { key: 'image_opa', label: 'Image Opacity', type: 'number', default: 255, min: 0, max: 255 },
+        { key: 'image_recolor', label: 'Recolor Tint', type: 'color', default: '#ff0000' },
+        { key: 'image_recolor_opa', label: 'Recolor Intensity', type: 'number', default: 0, min: 0, max: 255 },
       ],
     },
   ],
@@ -303,6 +350,9 @@ export const WIDGET_PROPS: Partial<Record<WidgetType, PropSection[]>> = {
         { key: 'auto_size', label: 'Auto Size', type: 'boolean', default: true },
         { key: 'zoom', label: 'Zoom (256 = 100%)', type: 'number', default: 256, min: 1 },
         { key: 'angle', label: 'Angle (0.1° steps)', type: 'number', default: 0, min: 0, max: 3600 },
+        { key: 'image_opa', label: 'Image Opacity', type: 'number', default: 255, min: 0, max: 255 },
+        { key: 'image_recolor', label: 'Recolor Tint', type: 'color', default: '#ff0000' },
+        { key: 'image_recolor_opa', label: 'Recolor Intensity', type: 'number', default: 0, min: 0, max: 255 },
       ],
     },
   ],

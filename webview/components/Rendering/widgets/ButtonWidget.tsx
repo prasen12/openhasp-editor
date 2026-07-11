@@ -1,6 +1,7 @@
 import React from 'react';
 import { Widget } from '../../../types';
 import { decodeUnicodeEscapes, translateLVGLToMDI } from '../../../utils/widgetHierarchy';
+import { getTextStyleExtras, getBackgroundStyle } from '../../../utils/styleProps';
 // @ts-ignore: CSS module declaration is not available in this workspace
 import './Widgets.css';
 
@@ -12,9 +13,8 @@ export const ButtonWidget: React.FC<ButtonWidgetProps> = ({ widget }) => {
   const style: React.CSSProperties = {
     width: '100%',
     height: '100%',
-    backgroundColor: widget.bg_color || '#2196F3',
+    ...getBackgroundStyle(widget, '#2196F3'),
     color: widget.text_color || '#FFFFFF',
-    border: widget.border_width ? `${widget.border_width}px solid ${widget.border_color || '#000'}` : 'none',
     borderRadius: widget.radius ? `${widget.radius}px` : '0',
     display: 'flex',
     alignItems: widget.align || 'center',
@@ -24,6 +24,7 @@ export const ButtonWidget: React.FC<ButtonWidgetProps> = ({ widget }) => {
     cursor: 'pointer',
     userSelect: 'none',
     fontFamily: "'openHASP Icons', sans-serif",
+    ...getTextStyleExtras(widget),
   };
 
   return (

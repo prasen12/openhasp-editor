@@ -23,6 +23,8 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* Must paint above .canvas-widget (z-index: 1) and .canvas-widget.selected (z-index: 10). */
+  z-index: 100;
 }
 
 .canvas-empty-state {

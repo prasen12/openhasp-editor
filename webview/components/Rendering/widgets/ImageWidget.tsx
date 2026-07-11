@@ -22,13 +22,36 @@ export const ImageWidget: React.FC<ImageWidgetProps> = ({ widget }) => {
     );
   }
 
+  const recolorOpa = widget.image_recolor_opa ?? 0;
+
   return (
-    <img
-      className="widget-image"
-      src={uri}
-      alt=""
-      draggable={false}
-      style={{ width: '100%', height: '100%', borderRadius: radius, objectFit: 'fill' }}
-    />
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <img
+        className="widget-image"
+        src={uri}
+        alt=""
+        draggable={false}
+        style={{
+          width: '100%',
+          height: '100%',
+          borderRadius: radius,
+          objectFit: 'fill',
+          opacity: (widget.image_opa ?? 255) / 255,
+        }}
+      />
+      {widget.image_recolor && recolorOpa > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: radius,
+            backgroundColor: widget.image_recolor,
+            opacity: recolorOpa / 255,
+            mixBlendMode: 'color',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+    </div>
   );
 };

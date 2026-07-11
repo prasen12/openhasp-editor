@@ -30,9 +30,14 @@ export interface Widget {
   // Common styling
   bg_color?: string;
   bg_opa?: number;
+  bg_grad_color?: string;
+  bg_grad_dir?: number;
+  bg_grad_stop?: number;
+  bg_main_stop?: number;
   border_width?: number;
   border_color?: string;
   border_opa?: number;
+  border_side?: number;
   radius?: number;
   hidden?: boolean;
   opacity?: number;
@@ -41,7 +46,36 @@ export interface Widget {
   text?: string;
   text_color?: string;
   text_font?: number;
+  text_opa?: number;
+  text_letter_space?: number;
+  text_line_space?: number;
+  text_decor?: number;
   align?: string;
+
+  // Shadow
+  shadow_color?: string;
+  shadow_opa?: number;
+  shadow_width?: number;
+  shadow_ofs_x?: number;
+  shadow_ofs_y?: number;
+  shadow_spread?: number;
+
+  // Outline
+  outline_color?: string;
+  outline_opa?: number;
+  outline_width?: number;
+  outline_pad?: number;
+
+  // Padding
+  pad_top?: number;
+  pad_right?: number;
+  pad_bottom?: number;
+  pad_left?: number;
+
+  // Image
+  image_opa?: number;
+  image_recolor?: string;
+  image_recolor_opa?: number;
 
   // Widget-specific properties (dynamic)
   [key: string]: any;

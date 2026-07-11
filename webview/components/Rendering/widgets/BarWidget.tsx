@@ -1,5 +1,6 @@
 import React from 'react';
 import { Widget } from '../../../types';
+import { colorWithOpacity } from '../../../utils/color';
 import './Widgets.css';
 
 interface BarWidgetProps {
@@ -24,7 +25,7 @@ export const BarWidget: React.FC<BarWidgetProps> = ({ widget }) => {
   const barStyle: React.CSSProperties = {
     width: `${percentage}%`,
     height: '100%',
-    backgroundColor: widget.bg_color || '#4CAF50',
+    backgroundColor: colorWithOpacity(widget.bg_color, widget.bg_opa, '#4CAF50'),
     transition: 'width 0.3s'
   };
 

@@ -43,6 +43,22 @@ export const widgetDefinitions: Record<string, WidgetDefinition> = {
     }
   },
 
+  tab: {
+    type: 'tab',
+    name: 'Tab',
+    category: 'Containers',
+    icon: '⇥',
+    description: 'A single tab within a Tab View (set its parent to a Tab View)',
+    defaultProps: {
+      obj: 'tab',
+      x: 10,
+      y: 40,
+      w: 200,
+      h: 150,
+      text: 'Tab'
+    }
+  },
+
   // Controls
   btn: {
     type: 'btn',
@@ -131,6 +147,72 @@ export const widgetDefinitions: Record<string, WidgetDefinition> = {
     }
   },
 
+  roller: {
+    type: 'roller',
+    name: 'Roller',
+    category: 'Selectors',
+    icon: '↕',
+    description: 'Rotating list picker',
+    defaultProps: {
+      obj: 'roller',
+      x: 10,
+      y: 10,
+      w: 150,
+      h: 90,
+      options: 'Option 1\nOption 2\nOption 3',
+      val: 0
+    }
+  },
+
+  cpicker: {
+    type: 'cpicker',
+    name: 'Color Picker',
+    category: 'Selectors',
+    icon: '🎨',
+    description: 'Color selection wheel',
+    defaultProps: {
+      obj: 'cpicker',
+      x: 10,
+      y: 10,
+      w: 120,
+      h: 120,
+      val: '#ff0000'
+    }
+  },
+
+  btnmatrix: {
+    type: 'btnmatrix',
+    name: 'Button Matrix',
+    category: 'Controls',
+    icon: '⊞',
+    description: 'Grid of buttons',
+    defaultProps: {
+      obj: 'btnmatrix',
+      x: 10,
+      y: 10,
+      w: 200,
+      h: 100,
+      options: 'Btn1,Btn2,Btn3'
+    }
+  },
+
+  msgbox: {
+    type: 'msgbox',
+    name: 'Message Box',
+    category: 'Controls',
+    icon: '💬',
+    description: 'Pop-up message dialog',
+    defaultProps: {
+      obj: 'msgbox',
+      x: 10,
+      y: 10,
+      w: 280,
+      h: 120,
+      text: 'Message text',
+      options: 'OK'
+    }
+  },
+
   // Visualization
   label: {
     type: 'label',
@@ -209,6 +291,24 @@ export const widgetDefinitions: Record<string, WidgetDefinition> = {
       end_angle: 45,
       line_width: 20,
       bg_color: '#2196F3'
+    }
+  },
+
+  linemeter: {
+    type: 'linemeter',
+    name: 'Line Meter',
+    category: 'Visualization',
+    icon: '◑',
+    description: 'Needle-style line meter gauge',
+    defaultProps: {
+      obj: 'linemeter',
+      x: 10,
+      y: 10,
+      w: 150,
+      h: 150,
+      min: 0,
+      max: 100,
+      val: 50
     }
   },
 
@@ -297,19 +397,19 @@ export const widgetDefinitions: Record<string, WidgetDefinition> = {
 export const widgetCategories = [
   {
     name: 'Containers',
-    widgets: ['obj', 'tabview']
+    widgets: ['obj', 'tabview', 'tab']
   },
   {
     name: 'Controls',
-    widgets: ['btn', 'switch', 'slider', 'checkbox']
+    widgets: ['btn', 'switch', 'slider', 'checkbox', 'btnmatrix', 'msgbox']
   },
   {
     name: 'Visualization',
-    widgets: ['label', 'gauge', 'bar', 'arc', 'led', 'spinner']
+    widgets: ['label', 'gauge', 'bar', 'arc', 'led', 'spinner', 'linemeter']
   },
   {
     name: 'Selectors',
-    widgets: ['dropdown']
+    widgets: ['dropdown', 'roller', 'cpicker']
   },
   {
     name: 'Graphics',

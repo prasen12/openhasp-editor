@@ -6,6 +6,7 @@ import { useSelectionStore } from '../../store/useSelectionStore';
 import { WidgetRenderer } from '../Rendering/WidgetRenderer';
 import { getChildWidgets } from '../../utils/widgetHierarchy';
 import { useResize, ResizeDirection } from '../../hooks/useResize';
+import { getBoxStyle, getPaddingStyle } from '../../utils/styleProps';
 import './CanvasWidget.css';
 
 interface CanvasWidgetProps {
@@ -51,8 +52,9 @@ export const CanvasWidget: React.FC<CanvasWidgetProps> = ({ widget, pageId, allW
     height: widget.h || 30,
     transform: CSS.Translate.toString(transform),
     cursor: interactive ? (isDragging ? 'grabbing' : 'grab') : 'default',
-    opacity: isDragging ? 0.5 : 1,
+    opacity: (isDragging ? 0.5 : 1) * ((widget.opacity ?? 255) / 255),
     overflow: childWidgets.length > 0 ? 'hidden' : undefined,
+    ...getBoxStyle(widget),
   };
 
   return (
@@ -64,7 +66,9 @@ export const CanvasWidget: React.FC<CanvasWidgetProps> = ({ widget, pageId, allW
       {...(interactive ? listeners : undefined)}
       {...(interactive ? attributes : undefined)}
     >
-      <WidgetRenderer widget={widget} />
+      <div style={{ width: '100%', height: '100%', ...getPaddingStyle(widget) }}>
+        <WidgetRenderer widget={widget} />
+      </div>
 
       {childWidgets.map(child => (
         <CanvasWidget key={child.id} widget={child} pageId={pageId} allWidgets={allWidgets} interactive={interactive} />

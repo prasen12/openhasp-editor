@@ -1,5 +1,6 @@
 import React from 'react';
 import { Widget } from '../../../types';
+import { colorWithOpacity } from '../../../utils/color';
 import './Widgets.css';
 
 interface SwitchWidgetProps {
@@ -12,7 +13,7 @@ export const SwitchWidget: React.FC<SwitchWidgetProps> = ({ widget }) => {
   const style: React.CSSProperties = {
     width: '100%',
     height: '100%',
-    backgroundColor: isOn ? (widget.bg_color || '#4CAF50') : '#cccccc',
+    backgroundColor: isOn ? colorWithOpacity(widget.bg_color, widget.bg_opa, '#4CAF50') : '#cccccc',
     borderRadius: widget.radius || 15,
     position: 'relative',
     transition: 'background-color 0.2s'
