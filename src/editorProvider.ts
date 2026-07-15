@@ -7,6 +7,7 @@ import { Page, DeviceProperties, ToWebviewMessage, ToExtensionMessage } from './
 import * as path from 'path';
 import * as fs from 'fs';
 import { decodeLvglBinFileToDataUri } from './lvgl/lvglBinDecoder';
+import { getHaConfig, getHaConnectionIssue, fetchEntities, logHa } from './haClient';
 
 function isHaspJsonFile(document: vscode.TextDocument): boolean {
   return document.uri.fsPath.endsWith('.hasp.json');
@@ -198,6 +199,31 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
 
         case 'export':
           await this.handleExport(message);
+          break;
+
+        case 'haRequestEntities':
+          logHa('Webview requested the Home Assistant entity list.');
+          try {
+            const haConfig = await getHaConfig(this.context);
+            if (!haConfig) {
+              const issue = await getHaConnectionIssue(this.context);
+              logHa(`Entity request refused: ${issue}`);
+              webviewPanel.webview.postMessage({
+                type: 'haEntitiesError',
+                message: issue ?? 'Not connected to Home Assistant. Run "openHASP: Connect to Home Assistant" first.',
+              } satisfies ToWebviewMessage);
+              break;
+            }
+            const entities = await fetchEntities(haConfig);
+            webviewPanel.webview.postMessage({ type: 'haEntities', entities } satisfies ToWebviewMessage);
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            logHa(`Entity request failed: ${message}`);
+            webviewPanel.webview.postMessage({
+              type: 'haEntitiesError',
+              message,
+            } satisfies ToWebviewMessage);
+          }
           break;
       }
     });

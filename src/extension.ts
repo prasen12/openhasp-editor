@@ -6,6 +6,8 @@ import { HaspJsonParser } from './haspJson/parser';
 import { generateHAConfig } from './haConfigGenerator';
 import { getMqttConfig, publishToDevice } from './mqttPublisher';
 import { JsonlSerializer } from './jsonl/serializer';
+import { getHaUrl, storeHaToken, testConnection, logHa } from './haClient';
+import { getOutputChannel, log } from './outputChannel';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('openHASP Page Editor extension is now active');
@@ -109,6 +111,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         const mqttConfig = getMqttConfig();
         if (!mqttConfig.host) {
+          log('[MQTT] Upload to device refused: openhasp.mqtt.host is not configured.');
           vscode.window.showErrorMessage(
             'MQTT host is not configured. Set openhasp.mqtt.host in Settings.'
           );
@@ -117,6 +120,8 @@ export function activate(context: vscode.ExtensionContext) {
 
         const jsonlContent = JsonlSerializer.serialize(pages);
         const deviceName = deviceProperties.deviceName;
+
+        log(`[MQTT] Upload to device requested: ${deviceName} via ${mqttConfig.host}:${mqttConfig.port}.`);
 
         await vscode.window.withProgress(
           {
@@ -127,13 +132,16 @@ export function activate(context: vscode.ExtensionContext) {
           async (progress) => {
             try {
               await publishToDevice(deviceName, jsonlContent, mqttConfig, progress);
+              log(`[MQTT] Successfully published to ${deviceName}.`);
               vscode.window.showInformationMessage(
                 `Successfully published to ${deviceName} (${mqttConfig.host}:${mqttConfig.port})`
               );
             } catch (err) {
-              vscode.window.showErrorMessage(
-                `MQTT publish failed: ${err instanceof Error ? err.message : String(err)}`
-              );
+              const message = err instanceof Error ? err.message : String(err);
+              log(`[MQTT] Publish to ${deviceName} failed: ${message}`);
+              vscode.window.showErrorMessage(`MQTT publish failed: ${message}`, 'Show Log').then(choice => {
+                if (choice === 'Show Log') getOutputChannel().show(true);
+              });
             }
           }
         );
@@ -220,6 +228,65 @@ export function activate(context: vscode.ExtensionContext) {
         );
       }
     )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('openhasp.connectHomeAssistant', async () => {
+      const config = vscode.workspace.getConfiguration('openhasp.homeAssistant');
+      const url = await vscode.window.showInputBox({
+        prompt: 'Home Assistant URL',
+        placeHolder: 'http://homeassistant.local:8123',
+        value: getHaUrl() || 'http://homeassistant.local:8123',
+        validateInput: v => {
+          try {
+            new URL(v);
+            return undefined;
+          } catch {
+            return 'Enter a valid URL, e.g. http://homeassistant.local:8123';
+          }
+        },
+      });
+      if (!url) return;
+
+      const token = await vscode.window.showInputBox({
+        prompt: 'Home Assistant long-lived access token (Profile → Security → Long-Lived Access Tokens)',
+        password: true,
+        ignoreFocusOut: true,
+      });
+      if (!token) return;
+
+      logHa(`Connect command: saving URL ${url} and a ${token.length}-character token.`);
+      await config.update('url', url, vscode.ConfigurationTarget.Global);
+      await storeHaToken(context, token);
+
+      // Settings writes are async; re-read what's actually persisted so a silent write failure
+      // (e.g. a workspace-scoped override shadowing the Global value) shows up in the log.
+      const persistedUrl = getHaUrl();
+      if (persistedUrl !== url.replace(/\/+$/, '') && persistedUrl !== url) {
+        logHa(`Warning: read back URL "${persistedUrl}" after saving "${url}" — a workspace or folder setting may be overriding the Global value.`);
+      }
+
+      await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: 'Connecting to Home Assistant…' },
+        async () => {
+          try {
+            await testConnection({ url: url.replace(/\/+$/, ''), token });
+            vscode.window.showInformationMessage('Connected to Home Assistant successfully.');
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            vscode.window.showErrorMessage(`Failed to connect to Home Assistant: ${message}`, 'Show Log').then(choice => {
+              if (choice === 'Show Log') getOutputChannel().show(true);
+            });
+          }
+        }
+      );
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('openhasp.showLog', () => {
+      getOutputChannel().show();
+    })
   );
 
   context.subscriptions.push(

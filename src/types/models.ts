@@ -77,8 +77,43 @@ export interface Widget {
   image_recolor?: string;
   image_recolor_opa?: number;
 
+  // Home Assistant binding (editor-only, not rendered by openHASP — see haBinding.ts)
+  haBinding?: HaBinding;
+
   // Widget-specific properties (dynamic)
   [key: string]: any;
+}
+
+/**
+ * How a widget is wired to Home Assistant. Stored only in the .hasp.json design file.
+ * Display and action are independent: a widget can show one entity's state while its
+ * action (if any) targets a different entity, or is a local openHASP page-navigation
+ * command that doesn't involve Home Assistant at all.
+ */
+export interface HaBinding {
+  /** Entity whose state is reflected on the widget (any domain). Omit for action-only bindings. */
+  displayEntityId?: string;
+  /** Which widget property the display value is written to. Defaults to a sensible choice per widget type. */
+  displayProperty?: 'val' | 'text';
+  /** 'auto' derives the state template from haBindingDefaults; a string is a raw Jinja override (no braces). */
+  stateTemplate?: 'auto' | string;
+  /** Entity the action targets when action.kind is 'service'. Not used for 'page' actions. */
+  actionEntityId?: string;
+  action?: HaAction;
+}
+
+export type HaAction =
+  | { kind: 'none' }
+  /** Calls an HA service on actionEntityId when the openHASP event named `trigger` fires. */
+  | { kind: 'service'; trigger: string; service: string; dataLines?: string[] }
+  /** Local openHASP page navigation via MQTT — no Home Assistant entity involved. */
+  | { kind: 'page'; trigger: string; target: 'next' | 'prev' | 'back' | number };
+
+export interface HaEntity {
+  entityId: string;
+  domain: string;
+  state: string;
+  friendlyName?: string;
 }
 
 export interface Page {
@@ -114,9 +149,12 @@ export interface Template {
 export type ToWebviewMessage =
   | { type: 'init'; pages: Page[]; fileName: string; canvasWidth: number; canvasHeight: number; deviceProperties?: DeviceProperties; fontOverrideUri?: string; imageUris?: Record<string, string> }
   | { type: 'documentChanged'; pages: Page[]; deviceProperties?: DeviceProperties; fontOverrideUri?: string; imageUris?: Record<string, string> }
-  | { type: 'navigateTo'; pageId: number; widgetId?: number };
+  | { type: 'navigateTo'; pageId: number; widgetId?: number }
+  | { type: 'haEntities'; entities: HaEntity[] }
+  | { type: 'haEntitiesError'; message: string };
 
 export type ToExtensionMessage =
   | { type: 'update'; pages: Page[]; deviceProperties?: DeviceProperties }
   | { type: 'export'; pages: Page[]; format: 'jsonl' | 'json' }
-  | { type: 'ready' };
+  | { type: 'ready' }
+  | { type: 'haRequestEntities' };

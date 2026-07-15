@@ -121,6 +121,18 @@
         "title": "Generate Home Assistant Config",
         "category": "openHASP",
         "icon": "$(gear)"
+      },
+      {
+        "command": "openhasp.connectHomeAssistant",
+        "title": "Connect to Home Assistant",
+        "category": "openHASP",
+        "icon": "$(home)"
+      },
+      {
+        "command": "openhasp.showLog",
+        "title": "Show Log",
+        "category": "openHASP",
+        "icon": "$(output)"
       }
     ],
     "menus": {
@@ -190,6 +202,12 @@
         {
           "command": "openhasp.exportJsonl",
           "when": "resourceExtname == .hasp.json"
+        },
+        {
+          "command": "openhasp.connectHomeAssistant"
+        },
+        {
+          "command": "openhasp.showLog"
         }
       ]
     },
@@ -250,6 +268,11 @@
           "type": "string",
           "default": "",
           "description": "MQTT broker password (leave blank if not required)"
+        },
+        "openhasp.homeAssistant.url": {
+          "type": "string",
+          "default": "",
+          "description": "Base URL of your Home Assistant instance, e.g. http://homeassistant.local:8123. Used to look up entities for widget bindings. The access token is entered separately via the \"openHASP: Connect to Home Assistant\" command and stored securely, not in settings."
         }
       }
     }

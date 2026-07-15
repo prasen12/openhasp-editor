@@ -53,6 +53,10 @@ class VSCodeAPIWrapper {
   public ready(): void {
     this.postMessage({ type: 'ready' });
   }
+
+  public requestHaEntities(): void {
+    this.postMessage({ type: 'haRequestEntities' });
+  }
 }
 
 export const vscode = new VSCodeAPIWrapper();

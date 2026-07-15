@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Page, Widget, DeviceProperties } from '../types';
+import { Page, Widget, DeviceProperties, HaEntity } from '../types';
 
 interface EditorState {
   pages: Page[];
@@ -11,6 +11,9 @@ interface EditorState {
   deviceProperties: DeviceProperties | null;
   fontOverrideUri: string;
   imageUris: Record<string, string>;
+  haEntities: HaEntity[];
+  haEntitiesError: string | null;
+  haEntitiesLoading: boolean;
 
   setPages: (pages: Page[]) => void;
   setFileName: (fileName: string) => void;
@@ -19,6 +22,9 @@ interface EditorState {
   setDeviceProperties: (props: DeviceProperties) => void;
   setFontOverrideUri: (uri: string) => void;
   setImageUris: (uris: Record<string, string>) => void;
+  setHaEntities: (entities: HaEntity[]) => void;
+  setHaEntitiesError: (message: string) => void;
+  setHaEntitiesLoading: (loading: boolean) => void;
 
   addPage: () => void;
   addOverlayPage: () => void;
@@ -44,6 +50,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   deviceProperties: null,
   fontOverrideUri: '',
   imageUris: {},
+  haEntities: [],
+  haEntitiesError: null,
+  haEntitiesLoading: false,
 
   setPages: (pages: Page[]) => {
     set({ pages, isDirty: false });
@@ -64,6 +73,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setFontOverrideUri: (uri: string) => set({ fontOverrideUri: uri }),
 
   setImageUris: (uris: Record<string, string>) => set({ imageUris: uris }),
+
+  setHaEntities: (entities: HaEntity[]) => set({ haEntities: entities, haEntitiesError: null, haEntitiesLoading: false }),
+
+  setHaEntitiesError: (message: string) => set({ haEntitiesError: message, haEntitiesLoading: false }),
+
+  setHaEntitiesLoading: (loading: boolean) => set({ haEntitiesLoading: loading }),
 
   addPage: () => {
     const pages = get().pages;

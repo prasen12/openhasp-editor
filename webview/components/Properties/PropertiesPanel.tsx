@@ -7,6 +7,7 @@ import { IconPicker } from '../IconPicker/IconPicker';
 import { IconEntry } from '../../config/iconData';
 import { WIDGET_PROPS, PropSection } from '../../config/widgetProperties';
 import { isOverlayPage } from '../../utils/pageLabel';
+import { HaBindingSection } from './HaBindingSection';
 
 const fieldStyle: React.CSSProperties = {
   display: 'flex',
@@ -392,6 +393,8 @@ export const PropertiesPanel: React.FC = () => {
         <div style={{ height: '8px' }} />
         <Field label="Description" type="textarea" value={widget.description ?? ''} onChange={v => update('description', v || undefined)} />
       </div>
+
+      <HaBindingSection widget={widget} onUpdate={binding => update('haBinding', binding)} />
 
       {/* Position & Size */}
       <div style={sectionStyle}>

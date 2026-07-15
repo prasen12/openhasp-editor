@@ -15,7 +15,7 @@ export class JsonlSerializer {
 
       // Add widgets sorted by ID
       for (const widget of page.widgets.sort((a, b) => a.id - b.id)) {
-        const { page: _page, description, name: _name, ...rest } = widget as any;
+        const { page: _page, description, name: _name, haBinding: _haBinding, ...rest } = widget as any;
         const obj: any = { ...rest };
 
         // Map editor description to JSONL comment
@@ -47,7 +47,7 @@ export class JsonlSerializer {
   }
 
   static serializeWidget(widget: Widget): string {
-    const { page: _page, description, name: _name, ...rest } = widget as any;
+    const { page: _page, description, name: _name, haBinding: _haBinding, ...rest } = widget as any;
     const obj: any = { ...rest };
 
     // Map editor description to JSONL comment

@@ -1,5 +1,10 @@
 import * as mqtt from 'mqtt';
 import * as vscode from 'vscode';
+import { log } from './outputChannel';
+
+function logMqtt(message: string): void {
+  log(`[MQTT] ${message}`);
+}
 
 export interface MqttConfig {
   host: string;
@@ -34,6 +39,7 @@ export async function publishToDevice(
       password: config.password,
     };
 
+    logMqtt(`Connecting to ${url} (device slug "${slug}")…`);
     const client = mqtt.connect(url, connectOpts);
 
     let settled = false;
@@ -41,13 +47,19 @@ export async function publishToDevice(
       if (settled) return;
       settled = true;
       client.end();
+      if (err) logMqtt(`Publish failed: ${err.message}`);
+      else logMqtt(`Publish to ${slug} complete.`);
       if (err) reject(err);
       else resolve();
     }
 
-    client.on('error', (err) => done(err));
+    client.on('error', (err) => {
+      logMqtt(`Connection error: ${err.message}`);
+      done(err);
+    });
 
     client.on('connect', () => {
+      logMqtt(`Connected to ${url}.`);
       (async () => {
         // 1. Clear the device display
         progress.report({ message: 'Clearing device display…' });
@@ -55,6 +67,7 @@ export async function publishToDevice(
 
         // 2. Send each non-blank JSONL line
         const lines = jsonlContent.split('\n').filter(l => l.trim());
+        logMqtt(`Sending ${lines.length} JSONL lines to hasp/${slug}/command/jsonl…`);
         progress.report({ message: `Sending ${lines.length} JSONL lines…` });
         for (const line of lines) {
           await publish(client, `hasp/${slug}/command/jsonl`, line);
@@ -68,6 +81,10 @@ export async function publishToDevice(
 
 function publish(client: mqtt.MqttClient, topic: string, payload: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    client.publish(topic, payload, (err) => (err ? reject(err) : resolve()));
+    client.publish(topic, payload, (err) => {
+      if (err) logMqtt(`Failed to publish to ${topic}: ${err.message}`);
+      if (err) reject(err);
+      else resolve();
+    });
   });
 }

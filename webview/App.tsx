@@ -20,7 +20,8 @@ const GRID = 10;
 
 export const App: React.FC = () => {
   let { pages, setPages, setFileName, isDirty, currentPageId, setCurrentPage, addWidget, updateWidget, deleteWidgets,
-        canvasWidth, canvasHeight, setCanvasSize, deviceProperties, setDeviceProperties, setFontOverrideUri, setImageUris } = useEditorStore();
+        canvasWidth, canvasHeight, setCanvasSize, deviceProperties, setDeviceProperties, setFontOverrideUri, setImageUris,
+        setHaEntities, setHaEntitiesError } = useEditorStore();
   const { pushHistory } = useHistoryStore();
   const { selectedWidgetIds, clearSelection, selectWidget } = useSelectionStore();
 
@@ -120,6 +121,14 @@ export const App: React.FC = () => {
           if (message.widgetId !== undefined) {
             selectWidget(message.widgetId, false);
           }
+          break;
+
+        case 'haEntities':
+          setHaEntities(message.entities);
+          break;
+
+        case 'haEntitiesError':
+          setHaEntitiesError(message.message);
           break;
       }
     };

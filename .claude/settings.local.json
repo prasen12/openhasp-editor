@@ -15,7 +15,13 @@
       "Bash(sips -s format png Screenshot2.bmp --out /tmp/Screenshot2.png)",
       "Read(//tmp/**)",
       "Read(//private/tmp/**)",
-      "Bash(git commit -m \"feat: Make ArcWidget radius configurable and improve arc rendering:*)"
+      "Bash(git commit -m \"feat: Make ArcWidget radius configurable and improve arc rendering:*)",
+      "Bash(npm run *)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(grep -rn \"widget-\\\\${\" /Volumes/SPCC_1TB/Projects/openhasp-editor/webview)",
+      "Bash(grep -n \"Page \\\\${page.id}\" /Volumes/SPCC_1TB/Projects/openhasp-editor/src/haConfigGenerator.ts)",
+      "Bash(node -e ' *)"
     ]
   }
 }

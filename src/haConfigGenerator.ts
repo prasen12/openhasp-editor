@@ -1,4 +1,5 @@
 import { DeviceProperties, Page, Widget } from './types/models';
+import { getAutoStateTemplate, resolveDisplayProperty } from './haBindingDefaults';
 
 function propertiesPlaceholder(obj: string): string[] {
   switch (obj) {
@@ -77,6 +78,58 @@ function eventPlaceholder(obj: string): string[] | null {
   }
 }
 
+/**
+ * Lines under a widget's `properties:` block, or null to omit the block entirely.
+ * A widget with no haBinding at all gets the legacy TODO placeholder (untouched by this feature);
+ * a widget with a haBinding but no displayEntityId is a deliberate action-only binding — no properties.
+ */
+function buildPropertyLines(widget: Widget): string[] | null {
+  const binding = widget.haBinding;
+  if (!binding) return propertiesPlaceholder(widget.obj);
+  if (!binding.displayEntityId) return null;
+
+  const property = resolveDisplayProperty(widget.obj, binding.displayEntityId, binding.displayProperty);
+  const template = binding.stateTemplate && binding.stateTemplate !== 'auto'
+    ? binding.stateTemplate
+    : getAutoStateTemplate(widget.obj, binding.displayEntityId, property);
+
+  return [`      "${property}": '{{ ${template} }}'`];
+}
+
+/**
+ * Full `event:` block lines (including the trigger key), or null if the widget has no action.
+ * Same untouched-widget fallback rule as buildPropertyLines. The action itself is already
+ * fully resolved (which service, or which openHASP page command) by the properties panel —
+ * this just transcribes it into YAML, it doesn't re-derive anything.
+ */
+function buildEventBlockLines(widget: Widget, deviceSlug: string): string[] | null {
+  const binding = widget.haBinding;
+  if (!binding) return eventPlaceholder(widget.obj);
+
+  const action = binding.action;
+  if (!action || action.kind === 'none') return null;
+
+  if (action.kind === 'page') {
+    const payload = typeof action.target === 'number' ? String(action.target) : action.target;
+    return [
+      `      "${action.trigger}":`,
+      `        - service: mqtt.publish`,
+      `          data:`,
+      `            topic: hasp/${deviceSlug}/command/page`,
+      `            payload: "${payload}"`,
+    ];
+  }
+
+  if (!binding.actionEntityId) return null;
+  return [
+    `      "${action.trigger}":`,
+    `        - service: ${action.service}`,
+    `          target:`,
+    `            entity_id: ${binding.actionEntityId}`,
+    ...(action.dataLines?.length ? [`          data:`, ...action.dataLines] : []),
+  ];
+}
+
 export function generateHAConfig(deviceProperties: DeviceProperties, pages: Page[]): string {
   const { deviceName } = deviceProperties;
   const nodeName = deviceName.toLowerCase().replace(/\s+/g, '_');
@@ -104,13 +157,16 @@ export function generateHAConfig(deviceProperties: DeviceProperties, pages: Page
       const widgetLabel = widget.name ?? widget.description ?? widget.obj;
       lines.push(`  - obj: "${addr}"  # ${widgetLabel}`);
 
-      lines.push(`    properties:`);
-      lines.push(...propertiesPlaceholder(widget.obj));
+      const propertyLines = buildPropertyLines(widget);
+      if (propertyLines) {
+        lines.push(`    properties:`);
+        lines.push(...propertyLines);
+      }
 
-      const events = eventPlaceholder(widget.obj);
-      if (events) {
+      const eventBlock = buildEventBlockLines(widget, nodeName);
+      if (eventBlock) {
         lines.push(`    event:`);
-        lines.push(...events);
+        lines.push(...eventBlock);
       }
 
       lines.push('');

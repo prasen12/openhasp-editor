@@ -58,7 +58,34 @@ export interface Widget {
   image_opa?: number;
   image_recolor?: string;
   image_recolor_opa?: number;
+  haBinding?: HaBinding;
   [key: string]: any;
+}
+
+/**
+ * How a widget is wired to Home Assistant. Stored only in the .hasp.json design file.
+ * Display and action are independent: a widget can show one entity's state while its
+ * action (if any) targets a different entity, or is a local openHASP page-navigation
+ * command that doesn't involve Home Assistant at all.
+ */
+export interface HaBinding {
+  displayEntityId?: string;
+  displayProperty?: 'val' | 'text';
+  stateTemplate?: 'auto' | string;
+  actionEntityId?: string;
+  action?: HaAction;
+}
+
+export type HaAction =
+  | { kind: 'none' }
+  | { kind: 'service'; trigger: string; service: string; dataLines?: string[] }
+  | { kind: 'page'; trigger: string; target: 'next' | 'prev' | 'back' | number };
+
+export interface HaEntity {
+  entityId: string;
+  domain: string;
+  state: string;
+  friendlyName?: string;
 }
 
 export interface Page {
