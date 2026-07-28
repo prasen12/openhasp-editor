@@ -32,6 +32,7 @@ interface EditorState {
   updatePage: (pageId: number, updates: Partial<Page>) => void;
 
   addWidget: (pageId: number, widget: Widget) => void;
+  addWidgets: (pageId: number, widgets: Widget[]) => void;
   updateWidget: (pageId: number, widgetId: number, updates: Partial<Widget>) => void;
   deleteWidget: (pageId: number, widgetId: number) => void;
   deleteWidgets: (pageId: number, widgetIds: number[]) => void;
@@ -128,6 +129,17 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       pages: get().pages.map(page =>
         page.id === pageId
           ? { ...page, widgets: [...page.widgets, widget] }
+          : page
+      ),
+      isDirty: true
+    });
+  },
+
+  addWidgets: (pageId: number, widgets: Widget[]) => {
+    set({
+      pages: get().pages.map(page =>
+        page.id === pageId
+          ? { ...page, widgets: [...page.widgets, ...widgets] }
           : page
       ),
       isDirty: true

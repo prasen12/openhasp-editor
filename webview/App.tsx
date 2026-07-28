@@ -3,6 +3,7 @@ import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, u
 import { useEditorStore } from './store/useEditorStore';
 import { useHistoryStore } from './store/useHistoryStore';
 import { useSelectionStore } from './store/useSelectionStore';
+import { useClipboardStore } from './store/useClipboardStore';
 import { vscode } from './utils/vscodeApi';
 import { EditorLayout } from './components/Layout/EditorLayout';
 import { WidgetPalette } from './components/Palette/WidgetPalette';
@@ -14,34 +15,61 @@ import { WidgetRenderer } from './components/Rendering/WidgetRenderer';
 import { getNextWidgetId, WidgetDefinition } from './config/widgetDefinitions';
 import { Widget } from './types';
 import { findWidgetAtPoint, getWidgetAbsoluteRect, isDescendant } from './utils/widgetHierarchy';
+import { collectWithDescendants, cloneWidgetsForPaste } from './utils/clipboard';
 import { getPageLabel } from './utils/pageLabel';
 
 const GRID = 10;
 
 export const App: React.FC = () => {
-  let { pages, setPages, setFileName, isDirty, currentPageId, setCurrentPage, addWidget, updateWidget, deleteWidgets,
+  let { pages, setPages, setFileName, isDirty, currentPageId, setCurrentPage, addWidget, addWidgets, updateWidget, deleteWidgets,
         canvasWidth, canvasHeight, setCanvasSize, deviceProperties, setDeviceProperties, setFontOverrideUri, setImageUris,
         setHaEntities, setHaEntitiesError } = useEditorStore();
   const { pushHistory } = useHistoryStore();
-  const { selectedWidgetIds, clearSelection, selectWidget } = useSelectionStore();
+  const { selectedWidgetIds, clearSelection, selectWidget, selectMultiple } = useSelectionStore();
+  const { copiedWidgets, pasteCount, copyWidgets, registerPaste } = useClipboardStore();
 
   const [activeCanvasWidget, setActiveCanvasWidget] = useState<Widget | null>(null);
   const [activePaletteDefinition, setActivePaletteDefinition] = useState<WidgetDefinition | null>(null);
 
-  // Delete selected widgets on Delete / Backspace (skip when focus is in an input)
+  // Delete / copy / paste selected widgets via keyboard (skip when focus is in an input)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      if (selectedWidgetIds.length === 0) return;
-      e.preventDefault();
-      deleteWidgets(currentPageId, selectedWidgetIds);
-      clearSelection();
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedWidgetIds.length === 0) return;
+        e.preventDefault();
+        deleteWidgets(currentPageId, selectedWidgetIds);
+        clearSelection();
+        return;
+      }
+
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const currentPage = pages.find(p => p.id === currentPageId);
+      if (!currentPage) return;
+
+      if (e.key.toLowerCase() === 'c') {
+        if (selectedWidgetIds.length === 0) return;
+        e.preventDefault();
+        copyWidgets(collectWithDescendants(selectedWidgetIds, currentPage.widgets));
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'v') {
+        if (copiedWidgets.length === 0) return;
+        e.preventDefault();
+        const offset = 20 + pasteCount * 20;
+        const newWidgets = cloneWidgetsForPaste(copiedWidgets, currentPage.widgets, currentPageId, offset);
+        addWidgets(currentPageId, newWidgets);
+        registerPaste();
+        selectMultiple(newWidgets.map(w => w.id));
+        return;
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedWidgetIds, currentPageId, deleteWidgets, clearSelection]);
+  }, [selectedWidgetIds, currentPageId, pages, deleteWidgets, clearSelection, copiedWidgets, pasteCount, copyWidgets, registerPaste, addWidgets, selectMultiple]);
   const fontStyleRef = useRef<HTMLStyleElement | null>(null);
 
   const sensors = useSensors(

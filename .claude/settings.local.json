@@ -21,7 +21,8 @@
       "Skill(run:*)",
       "Bash(grep -rn \"widget-\\\\${\" /Volumes/SPCC_1TB/Projects/openhasp-editor/webview)",
       "Bash(grep -n \"Page \\\\${page.id}\" /Volumes/SPCC_1TB/Projects/openhasp-editor/src/haConfigGenerator.ts)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(cp /Volumes/SPCC_1TB/Projects/openhasp-editor/examples/sample.jsonl /tmp/verify-copy-paste.jsonl)"
     ]
   }
 }
