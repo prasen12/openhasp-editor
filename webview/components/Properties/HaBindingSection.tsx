@@ -2,10 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { Widget, HaBinding, HaAction, HaEntity } from '../../types';
 import { useEditorStore } from '../../store/useEditorStore';
 import { vscode } from '../../utils/vscodeApi';
+import { HaTemplateEditor } from './HaTemplateEditor';
 import {
   isHaBindable, supportsAction, actionDomains, defaultDisplayProperty, describeAutoDisplay, describeAction,
   actionOptionsForEntity, firstCuratedAction, PAGE_COMMANDS,
 } from '../../config/haBindingDefaults';
+
+interface TemplateEditorState {
+  title: string;
+  value: string;
+  apply: (value: string) => void;
+}
+
+const editTemplateButtonStyle: React.CSSProperties = {
+  alignSelf: 'flex-start', marginTop: '4px', padding: '2px 8px', fontSize: '11px', cursor: 'pointer',
+  background: 'var(--vscode-input-background)', color: 'var(--vscode-foreground)',
+  border: '1px solid var(--vscode-input-border)', borderRadius: '2px',
+};
 
 /** Which <select> value represents the currently-stored action, so the dropdown stays in sync. */
 function actionSelectValue(action: HaAction | undefined, entityId?: string): string {
@@ -146,14 +159,26 @@ interface HaBindingSectionProps {
 
 function normalize(binding: HaBinding): HaBinding | undefined {
   const hasAction = binding.action !== undefined && binding.action.kind !== 'none';
-  return binding.displayEntityId || binding.actionEntityId || hasAction ? binding : undefined;
+  return binding.displayEntityId || binding.displayTemplate || binding.actionEntityId || hasAction
+    ? binding
+    : undefined;
 }
 
 export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUpdate }) => {
   const { haEntities, haEntitiesError, haEntitiesLoading, setHaEntitiesLoading } = useEditorStore();
   const [advanced, setAdvanced] = useState(false);
+  const [displayMode, setDisplayMode] = useState<'entity' | 'template'>(
+    widget.haBinding?.displayTemplate ? 'template' : 'entity',
+  );
+  const [templateEditor, setTemplateEditor] = useState<TemplateEditorState | null>(null);
   const bindable = isHaBindable(widget.obj);
   const actionable = supportsAction(widget.obj);
+
+  // Selecting a different widget re-derives which display mode its binding is in.
+  useEffect(() => {
+    setDisplayMode(widget.haBinding?.displayTemplate ? 'template' : 'entity');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.id]);
 
   // Fetch the entity list once on first use so the picker isn't empty the first time a widget is bound.
   useEffect(() => {
@@ -243,21 +268,95 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
         </p>
       )}
 
-      {/* Display: any entity, any domain — what the widget shows */}
+      {/* Display source: bind to a single entity, or supply a free-form Jinja template. */}
       <div style={fieldStyle}>
-        <span style={labelStyle}>Display (any entity)</span>
-        <EntityPicker
-          key={`display-${widget.id}`}
-          entities={haEntities}
-          value={binding?.displayEntityId}
-          placeholder="Search all entities…"
-          onSelect={entityId => applyPatch({ displayEntityId: entityId, stateTemplate: 'auto' })}
-          onClear={() => applyPatch({ displayEntityId: undefined, displayProperty: undefined, stateTemplate: undefined })}
-          emptyHint={haEntities.length === 0 ? 'No entities loaded — try refreshing (⟳ above)' : 'No matching entities'}
-        />
+        <span style={labelStyle}>Display source</span>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          {(['entity', 'template'] as const).map(mode => (
+            <button
+              key={mode}
+              onClick={() => {
+                if (mode === displayMode) return;
+                setDisplayMode(mode);
+                // Switching source clears the other side so only one display path is stored.
+                if (mode === 'entity') {
+                  applyPatch({ displayTemplate: undefined });
+                } else {
+                  applyPatch({ displayEntityId: undefined, stateTemplate: undefined });
+                }
+              }}
+              style={{
+                flex: 1, padding: '3px 0', fontSize: '11px', cursor: 'pointer', borderRadius: '2px',
+                border: '1px solid var(--vscode-input-border)',
+                background: displayMode === mode
+                  ? 'var(--vscode-button-background, var(--vscode-list-activeSelectionBackground))'
+                  : 'var(--vscode-input-background)',
+                color: displayMode === mode
+                  ? 'var(--vscode-button-foreground, var(--vscode-foreground))'
+                  : 'var(--vscode-foreground)',
+              }}
+            >
+              {mode === 'entity' ? 'Entity' : 'Template'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {binding?.displayEntityId && (
+      {displayMode === 'entity' && (
+        <div style={fieldStyle}>
+          <span style={labelStyle}>Display (any entity)</span>
+          <EntityPicker
+            key={`display-${widget.id}`}
+            entities={haEntities}
+            value={binding?.displayEntityId}
+            placeholder="Search all entities…"
+            onSelect={entityId => applyPatch({ displayEntityId: entityId, stateTemplate: 'auto' })}
+            onClear={() => applyPatch({ displayEntityId: undefined, displayProperty: undefined, stateTemplate: undefined })}
+            emptyHint={haEntities.length === 0 ? 'No entities loaded — try refreshing (⟳ above)' : 'No matching entities'}
+          />
+        </div>
+      )}
+
+      {displayMode === 'template' && (
+        <>
+          <div style={fieldStyle}>
+            <span style={labelStyle}>Display template (Jinja, no braces)</span>
+            <textarea
+              value={binding?.displayTemplate ?? ''}
+              placeholder={'states("sensor.a") | float + states("sensor.b") | float'}
+              onChange={e => applyPatch({ displayTemplate: e.target.value ? e.target.value : undefined })}
+              rows={2}
+              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'var(--vscode-editor-font-family, monospace)' }}
+            />
+            <button
+              style={editTemplateButtonStyle}
+              onClick={() => setTemplateEditor({
+                title: 'Display Template',
+                value: binding?.displayTemplate ?? '',
+                apply: v => applyPatch({ displayTemplate: v || undefined }),
+              })}
+            >
+              Edit &amp; validate…
+            </button>
+          </div>
+          <div style={fieldStyle}>
+            <span style={labelStyle}>Displayed as</span>
+            <select
+              value={binding?.displayProperty ?? defaultDisplayProperty(widget.obj, '')}
+              onChange={e => applyPatch({ displayProperty: e.target.value as 'val' | 'text' })}
+              style={{ ...inputStyle, cursor: 'pointer' }}
+            >
+              <option value="val">Value (val)</option>
+              <option value="text">Text</option>
+            </select>
+          </div>
+          <p style={{ fontSize: '11px', opacity: 0.7, margin: '0 0 8px' }}>
+            Wrapped as <code>&#123;&#123; … &#125;&#125;</code> in the generated Home Assistant config.
+          </p>
+        </>
+      )}
+
+      {displayMode === 'entity' && binding?.displayEntityId && (
         <>
           {stateBadge(displayEntity)}
           {!advanced && (
@@ -287,6 +386,16 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
                   onChange={e => applyPatch({ stateTemplate: e.target.value.trim() ? e.target.value : 'auto' })}
                   style={inputStyle}
                 />
+                <button
+                  style={editTemplateButtonStyle}
+                  onClick={() => setTemplateEditor({
+                    title: 'State Template Override',
+                    value: binding.stateTemplate && binding.stateTemplate !== 'auto' ? binding.stateTemplate : '',
+                    apply: v => applyPatch({ stateTemplate: v.trim() ? v : 'auto' }),
+                  })}
+                >
+                  Edit &amp; validate…
+                </button>
               </div>
             </>
           )}
@@ -418,6 +527,15 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
         >
           Clear Home Assistant binding
         </button>
+      )}
+
+      {templateEditor && (
+        <HaTemplateEditor
+          title={templateEditor.title}
+          initialValue={templateEditor.value}
+          onSave={templateEditor.apply}
+          onClose={() => setTemplateEditor(null)}
+        />
       )}
     </div>
   );

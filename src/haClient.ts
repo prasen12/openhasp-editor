@@ -50,7 +50,20 @@ export async function clearHaToken(context: vscode.ExtensionContext): Promise<vo
   logHa('Cleared Home Assistant access token from SecretStorage.');
 }
 
-function requestJson(config: HaConfig, path: string, timeoutMs = 8000): Promise<any> {
+interface RawResponse {
+  statusCode: number;
+  body: string;
+}
+
+interface RequestOptions {
+  method?: 'GET' | 'POST';
+  body?: string;
+  timeoutMs?: number;
+}
+
+/** Low-level HTTP call. Resolves for any HTTP status (the caller inspects statusCode); rejects only on network/timeout errors. */
+function httpRequest(config: HaConfig, path: string, options: RequestOptions = {}): Promise<RawResponse> {
+  const { method = 'GET', body, timeoutMs = 8000 } = options;
   return new Promise((resolve, reject) => {
     let target: URL;
     try {
@@ -61,16 +74,17 @@ function requestJson(config: HaConfig, path: string, timeoutMs = 8000): Promise<
       return;
     }
 
-    logHa(`GET ${target.toString()}`);
+    logHa(`${method} ${target.toString()}`);
 
     const client = target.protocol === 'http:' ? http : https;
     const req = client.request(
       target,
       {
-        method: 'GET',
+        method,
         headers: {
           Authorization: `Bearer ${config.token}`,
           'Content-Type': 'application/json',
+          ...(body ? { 'Content-Length': Buffer.byteLength(body).toString() } : {}),
         },
         timeout: timeoutMs,
       },
@@ -78,21 +92,9 @@ function requestJson(config: HaConfig, path: string, timeoutMs = 8000): Promise<
         const chunks: Buffer[] = [];
         res.on('data', (chunk) => chunks.push(chunk));
         res.on('end', () => {
-          const body = Buffer.concat(chunks).toString('utf8');
-          logHa(`${res.statusCode} ← ${path} (${body.length} bytes)`);
-          if (res.statusCode === 401 || res.statusCode === 403) {
-            reject(new Error('Home Assistant rejected the access token (unauthorized).'));
-            return;
-          }
-          if (!res.statusCode || res.statusCode < 200 || res.statusCode >= 300) {
-            reject(new Error(`Home Assistant returned HTTP ${res.statusCode}`));
-            return;
-          }
-          try {
-            resolve(body ? JSON.parse(body) : undefined);
-          } catch {
-            reject(new Error('Home Assistant returned a non-JSON response.'));
-          }
+          const text = Buffer.concat(chunks).toString('utf8');
+          logHa(`${res.statusCode} ← ${path} (${text.length} bytes)`);
+          resolve({ statusCode: res.statusCode ?? 0, body: text });
         });
       }
     );
@@ -105,8 +107,53 @@ function requestJson(config: HaConfig, path: string, timeoutMs = 8000): Promise<
       logHa(`Request error for ${path}: ${err.message}`);
       reject(err);
     });
+    if (body) req.write(body);
     req.end();
   });
+}
+
+async function requestJson(config: HaConfig, path: string, timeoutMs = 8000): Promise<any> {
+  const { statusCode, body } = await httpRequest(config, path, { timeoutMs });
+  if (statusCode === 401 || statusCode === 403) {
+    throw new Error('Home Assistant rejected the access token (unauthorized).');
+  }
+  if (statusCode < 200 || statusCode >= 300) {
+    throw new Error(`Home Assistant returned HTTP ${statusCode}`);
+  }
+  try {
+    return body ? JSON.parse(body) : undefined;
+  } catch {
+    throw new Error('Home Assistant returned a non-JSON response.');
+  }
+}
+
+export type TemplateResult = { ok: true; rendered: string } | { ok: false; error: string };
+
+/**
+ * POST /api/template — asks Home Assistant to render a Jinja template so the editor can
+ * validate an expression before it's saved. On success returns the rendered text; on a
+ * template error HA replies 400 with a JSON `{ message }` describing what went wrong.
+ */
+export async function renderTemplate(config: HaConfig, template: string): Promise<TemplateResult> {
+  logHa('Rendering a template for validation.');
+  const { statusCode, body } = await httpRequest(config, '/api/template', {
+    method: 'POST',
+    body: JSON.stringify({ template }),
+  });
+
+  if (statusCode === 200) return { ok: true, rendered: body };
+  if (statusCode === 401 || statusCode === 403) {
+    return { ok: false, error: 'Home Assistant rejected the access token (unauthorized).' };
+  }
+
+  let error = `Home Assistant returned HTTP ${statusCode}`;
+  try {
+    const parsed = JSON.parse(body);
+    if (parsed?.message) error = parsed.message;
+  } catch {
+    if (body.trim()) error = body.trim();
+  }
+  return { ok: false, error };
 }
 
 /** GET /api/ — used purely to verify the URL + token are valid. */

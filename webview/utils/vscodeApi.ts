@@ -57,6 +57,10 @@ class VSCodeAPIWrapper {
   public requestHaEntities(): void {
     this.postMessage({ type: 'haRequestEntities' });
   }
+
+  public validateHaTemplate(requestId: string, template: string): void {
+    this.postMessage({ type: 'haValidateTemplate', requestId, template });
+  }
 }
 
 export const vscode = new VSCodeAPIWrapper();

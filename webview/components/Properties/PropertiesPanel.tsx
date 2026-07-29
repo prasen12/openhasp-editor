@@ -409,9 +409,14 @@ export const PropertiesPanel: React.FC = () => {
             <option value="">None (root)</option>
             {currentPage?.widgets
               .filter(w => w.id !== widget.id && !isDescendant(w.id, widget.id, currentPage.widgets))
-              .map(w => (
-                <option key={w.id} value={w.id}>#{w.id} ({w.obj})</option>
-              ))
+              .map(w => {
+                const desc = w.description?.trim() || w.name?.trim();
+                return (
+                  <option key={w.id} value={w.id}>
+                    #{w.id} ({w.obj}){desc ? ` — ${desc}` : ''}
+                  </option>
+                );
+              })
             }
           </select>
         </div>

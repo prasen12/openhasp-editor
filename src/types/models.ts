@@ -97,6 +97,9 @@ export interface HaBinding {
   displayProperty?: 'val' | 'text';
   /** 'auto' derives the state template from haBindingDefaults; a string is a raw Jinja override (no braces). */
   stateTemplate?: 'auto' | string;
+  /** Free-form Jinja template (no braces) used as the display value, independent of any single
+   *  entity. When set, it takes precedence over displayEntityId/stateTemplate for the display block. */
+  displayTemplate?: string;
   /** Entity the action targets when action.kind is 'service'. Not used for 'page' actions. */
   actionEntityId?: string;
   action?: HaAction;
@@ -151,10 +154,12 @@ export type ToWebviewMessage =
   | { type: 'documentChanged'; pages: Page[]; deviceProperties?: DeviceProperties; fontOverrideUri?: string; imageUris?: Record<string, string> }
   | { type: 'navigateTo'; pageId: number; widgetId?: number }
   | { type: 'haEntities'; entities: HaEntity[] }
-  | { type: 'haEntitiesError'; message: string };
+  | { type: 'haEntitiesError'; message: string }
+  | { type: 'haTemplateResult'; requestId: string; ok: boolean; rendered?: string; error?: string };
 
 export type ToExtensionMessage =
   | { type: 'update'; pages: Page[]; deviceProperties?: DeviceProperties }
   | { type: 'export'; pages: Page[]; format: 'jsonl' | 'json' }
   | { type: 'ready' }
-  | { type: 'haRequestEntities' };
+  | { type: 'haRequestEntities' }
+  | { type: 'haValidateTemplate'; requestId: string; template: string };

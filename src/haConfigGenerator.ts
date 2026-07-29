@@ -1,91 +1,21 @@
 import { DeviceProperties, Page, Widget } from './types/models';
-import { getAutoStateTemplate, resolveDisplayProperty } from './haBindingDefaults';
-
-function propertiesPlaceholder(obj: string): string[] {
-  switch (obj) {
-    case 'label':
-      return ['      "text": \'{{ states("sensor.TODO") }}\''];
-    case 'btn':
-    case 'button':
-      return ['      "enabled": "true"'];
-    case 'switch':
-    case 'checkbox':
-      return ['      "val": \'{{ 0 if is_state("switch.TODO", "off") else 1 }}\''];
-    case 'slider':
-    case 'arc':
-      return ['      "val": \'{{ states("sensor.TODO") | int }}\''];
-    case 'gauge':
-    case 'bar':
-    case 'linemeter':
-      return ['      "val": \'{{ states("sensor.TODO") | float }}\''];
-    case 'dropdown':
-    case 'roller':
-      return [
-        '      "val": "0"',
-        '      # "options": "Option 1\\nOption 2\\nOption 3"',
-      ];
-    default:
-      return ['      # "text": "TODO"'];
-  }
-}
-
-function eventPlaceholder(obj: string): string[] | null {
-  switch (obj) {
-    case 'btn':
-    case 'button':
-      return [
-        '      "up":',
-        '        - service: TODO.TODO',
-        '          target:',
-        '            entity_id: TODO.TODO',
-      ];
-    case 'switch':
-      return [
-        '      "up":',
-        '        - service: switch.toggle',
-        '          target:',
-        '            entity_id: switch.TODO',
-      ];
-    case 'checkbox':
-      return [
-        '      "up":',
-        '        - service: TODO.TODO',
-        '          target:',
-        '            entity_id: TODO.TODO',
-      ];
-    case 'slider':
-    case 'arc':
-      return [
-        '      "changed":',
-        '        - service: TODO.TODO',
-        '          target:',
-        '            entity_id: TODO.TODO',
-        '          data:',
-        '            value: "{{ val }}"',
-      ];
-    case 'dropdown':
-    case 'roller':
-      return [
-        '      "changed":',
-        '        - service: TODO.TODO',
-        '          target:',
-        '            entity_id: TODO.TODO',
-        '          data:',
-        '            option: "{{ text }}"',
-      ];
-    default:
-      return null;
-  }
-}
+import { defaultDisplayProperty, getAutoStateTemplate, resolveDisplayProperty } from './haBindingDefaults';
 
 /**
  * Lines under a widget's `properties:` block, or null to omit the block entirely.
- * A widget with no haBinding at all gets the legacy TODO placeholder (untouched by this feature);
- * a widget with a haBinding but no displayEntityId is a deliberate action-only binding — no properties.
+ * A widget with no haBinding produces nothing (the caller skips it). A widget with a
+ * binding but no display source (entity or template) is a deliberate action-only binding.
  */
 function buildPropertyLines(widget: Widget): string[] | null {
   const binding = widget.haBinding;
-  if (!binding) return propertiesPlaceholder(widget.obj);
+  if (!binding) return null;
+
+  // Free-form Jinja template as the display value — not tied to a single entity.
+  if (binding.displayTemplate) {
+    const property = binding.displayProperty ?? defaultDisplayProperty(widget.obj, '');
+    return [`      "${property}": '{{ ${binding.displayTemplate} }}'`];
+  }
+
   if (!binding.displayEntityId) return null;
 
   const property = resolveDisplayProperty(widget.obj, binding.displayEntityId, binding.displayProperty);
@@ -98,13 +28,12 @@ function buildPropertyLines(widget: Widget): string[] | null {
 
 /**
  * Full `event:` block lines (including the trigger key), or null if the widget has no action.
- * Same untouched-widget fallback rule as buildPropertyLines. The action itself is already
- * fully resolved (which service, or which openHASP page command) by the properties panel —
- * this just transcribes it into YAML, it doesn't re-derive anything.
+ * The action itself is already fully resolved (which service, or which openHASP page command)
+ * by the properties panel — this just transcribes it into YAML, it doesn't re-derive anything.
  */
 function buildEventBlockLines(widget: Widget, deviceSlug: string): string[] | null {
   const binding = widget.haBinding;
-  if (!binding) return eventPlaceholder(widget.obj);
+  if (!binding) return null;
 
   const action = binding.action;
   if (!action || action.kind === 'none') return null;
@@ -142,35 +71,45 @@ export function generateHAConfig(deviceProperties: DeviceProperties, pages: Page
     `#   openhasp:`,
     `#     ${nodeName}: !include openhasp/${nodeName}_config.yaml`,
     `#`,
-    `# Replace all TODO placeholders with your actual entity IDs and services.`,
+    `# Only widgets with a Home Assistant binding are listed below.`,
     `objects:`,
   ];
 
   for (const page of pages) {
     const pageName = page.id === 0 ? 'Overlay (all pages)' : (page.name ?? page.comment ?? `Page ${page.id}`);
-    lines.push(`  #####################################`);
-    lines.push(`  # Page ${page.id} \u2014 ${pageName}`);
-    lines.push(`  #####################################`);
 
+    const widgetLines: string[] = [];
     for (const widget of page.widgets) {
-      const addr = `p${page.id}b${widget.id}`;
-      const widgetLabel = widget.name ?? widget.description ?? widget.obj;
-      lines.push(`  - obj: "${addr}"  # ${widgetLabel}`);
+      if (!widget.haBinding) continue;
 
       const propertyLines = buildPropertyLines(widget);
-      if (propertyLines) {
-        lines.push(`    properties:`);
-        lines.push(...propertyLines);
-      }
-
       const eventBlock = buildEventBlockLines(widget, nodeName);
-      if (eventBlock) {
-        lines.push(`    event:`);
-        lines.push(...eventBlock);
+      if (!propertyLines && !eventBlock) continue;
+
+      const addr = `p${page.id}b${widget.id}`;
+      const widgetLabel = widget.name ?? widget.description ?? widget.obj;
+      widgetLines.push(`  - obj: "${addr}"  # ${widgetLabel}`);
+
+      if (propertyLines) {
+        widgetLines.push(`    properties:`);
+        widgetLines.push(...propertyLines);
       }
 
-      lines.push('');
+      if (eventBlock) {
+        widgetLines.push(`    event:`);
+        widgetLines.push(...eventBlock);
+      }
+
+      widgetLines.push('');
     }
+
+    // Skip pages with no bound widgets — no empty section headers.
+    if (widgetLines.length === 0) continue;
+
+    lines.push(`  #####################################`);
+    lines.push(`  # Page ${page.id} — ${pageName}`);
+    lines.push(`  #####################################`);
+    lines.push(...widgetLines);
   }
 
   return lines.join('\n') + '\n';

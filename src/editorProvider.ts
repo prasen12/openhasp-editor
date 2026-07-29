@@ -7,7 +7,7 @@ import { Page, DeviceProperties, ToWebviewMessage, ToExtensionMessage } from './
 import * as path from 'path';
 import * as fs from 'fs';
 import { decodeLvglBinFileToDataUri } from './lvgl/lvglBinDecoder';
-import { getHaConfig, getHaConnectionIssue, fetchEntities, logHa } from './haClient';
+import { getHaConfig, getHaConnectionIssue, fetchEntities, renderTemplate, logHa } from './haClient';
 
 function isHaspJsonFile(document: vscode.TextDocument): boolean {
   return document.uri.fsPath.endsWith('.hasp.json');
@@ -225,6 +225,33 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
             } satisfies ToWebviewMessage);
           }
           break;
+
+        case 'haValidateTemplate': {
+          const { requestId, template } = message;
+          logHa('Webview requested template validation.');
+          try {
+            const haConfig = await getHaConfig(this.context);
+            if (!haConfig) {
+              const issue = await getHaConnectionIssue(this.context);
+              webviewPanel.webview.postMessage({
+                type: 'haTemplateResult', requestId, ok: false,
+                error: issue ?? 'Not connected to Home Assistant. Run "openHASP: Connect to Home Assistant" first.',
+              } satisfies ToWebviewMessage);
+              break;
+            }
+            const result = await renderTemplate(haConfig, template);
+            webviewPanel.webview.postMessage({
+              type: 'haTemplateResult', requestId, ...result,
+            } satisfies ToWebviewMessage);
+          } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            logHa(`Template validation failed: ${errorMessage}`);
+            webviewPanel.webview.postMessage({
+              type: 'haTemplateResult', requestId, ok: false, error: errorMessage,
+            } satisfies ToWebviewMessage);
+          }
+          break;
+        }
       }
     });
 
