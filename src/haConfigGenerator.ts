@@ -1,29 +1,56 @@
 import { DeviceProperties, Page, Widget } from './types/models';
 import { defaultDisplayProperty, getAutoStateTemplate, resolveDisplayProperty } from './haBindingDefaults';
+import { wrapTemplate } from './haTemplate';
+
+/**
+ * Emit a `"<property>": <value>` line (or block). The template is wrapped to a real Jinja
+ * template first. Single-line templates are inlined as a single-quoted YAML scalar (any
+ * embedded single quote is doubled); multi-line templates — e.g. a {% if %}…{% endif %}
+ * block — use a literal block scalar so newlines and quotes survive untouched.
+ */
+function emitPropertyLines(property: string, rawTemplate: string): string[] {
+  const wrapped = wrapTemplate(rawTemplate);
+  if (!wrapped.includes('\n')) {
+    return [`      "${property}": '${wrapped.replace(/'/g, "''")}'`];
+  }
+  const body = wrapped.split('\n').map(line => `        ${line}`);
+  return [`      "${property}": |-`, ...body];
+}
 
 /**
  * Lines under a widget's `properties:` block, or null to omit the block entirely.
  * A widget with no haBinding produces nothing (the caller skips it). A widget with a
- * binding but no display source (entity or template) is a deliberate action-only binding.
+ * binding but no display source and no property templates is a deliberate action-only binding.
  */
 function buildPropertyLines(widget: Widget): string[] | null {
   const binding = widget.haBinding;
   if (!binding) return null;
 
-  // Free-form Jinja template as the display value — not tied to a single entity.
+  // Ordered so explicit propertyTemplates can override the display value on a key collision.
+  const merged = new Map<string, string>();
+
   if (binding.displayTemplate) {
+    // Free-form Jinja template as the display value — not tied to a single entity.
     const property = binding.displayProperty ?? defaultDisplayProperty(widget.obj, '');
-    return [`      "${property}": '{{ ${binding.displayTemplate} }}'`];
+    merged.set(property, binding.displayTemplate);
+  } else if (binding.displayEntityId) {
+    const property = resolveDisplayProperty(widget.obj, binding.displayEntityId, binding.displayProperty);
+    const template = binding.stateTemplate && binding.stateTemplate !== 'auto'
+      ? binding.stateTemplate
+      : getAutoStateTemplate(widget.obj, binding.displayEntityId, property);
+    merged.set(property, template);
   }
 
-  if (!binding.displayEntityId) return null;
+  // General per-property templates — any property can be driven by a template.
+  for (const [prop, tpl] of Object.entries(binding.propertyTemplates ?? {})) {
+    if (prop.trim() && tpl.trim()) merged.set(prop.trim(), tpl);
+  }
 
-  const property = resolveDisplayProperty(widget.obj, binding.displayEntityId, binding.displayProperty);
-  const template = binding.stateTemplate && binding.stateTemplate !== 'auto'
-    ? binding.stateTemplate
-    : getAutoStateTemplate(widget.obj, binding.displayEntityId, property);
+  if (merged.size === 0) return null;
 
-  return [`      "${property}": '{{ ${template} }}'`];
+  const lines: string[] = [];
+  for (const [prop, tpl] of merged) lines.push(...emitPropertyLines(prop, tpl));
+  return lines;
 }
 
 /**

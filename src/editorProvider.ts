@@ -8,6 +8,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { decodeLvglBinFileToDataUri } from './lvgl/lvglBinDecoder';
 import { getHaConfig, getHaConnectionIssue, fetchEntities, renderTemplate, logHa } from './haClient';
+import { wrapTemplate } from './haTemplate';
 
 function isHaspJsonFile(document: vscode.TextDocument): boolean {
   return document.uri.fsPath.endsWith('.hasp.json');
@@ -239,7 +240,7 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
               } satisfies ToWebviewMessage);
               break;
             }
-            const result = await renderTemplate(haConfig, template);
+            const result = await renderTemplate(haConfig, wrapTemplate(template));
             webviewPanel.webview.postMessage({
               type: 'haTemplateResult', requestId, ...result,
             } satisfies ToWebviewMessage);

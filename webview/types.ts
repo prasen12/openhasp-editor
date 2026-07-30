@@ -73,6 +73,7 @@ export interface HaBinding {
   displayProperty?: 'val' | 'text';
   stateTemplate?: 'auto' | string;
   displayTemplate?: string;
+  propertyTemplates?: Record<string, string>;
   actionEntityId?: string;
   action?: HaAction;
 }

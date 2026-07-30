@@ -55,6 +55,11 @@ const JINJA_FILTERS = [
   'as_local', 'multiply', 'is_number',
 ];
 
+/** Keywords offered inside a `{% … %}` statement block. */
+const JINJA_STATEMENTS = [
+  'if', 'elif', 'else', 'endif', 'for', 'endfor', 'in', 'set', 'macro', 'endmacro',
+];
+
 interface Suggestion {
   label: string;
   detail?: string;
@@ -64,7 +69,7 @@ interface Suggestion {
   cursorOffset?: number;
 }
 
-type SuggestKind = 'entity' | 'filter' | 'function';
+type SuggestKind = 'entity' | 'filter' | 'function' | 'statement';
 
 interface TokenContext {
   kind: SuggestKind;
@@ -81,6 +86,12 @@ function analyzeToken(value: string, cursor: number): TokenContext | null {
   const quote = before.match(/["']([^"']*)$/);
   if (quote) {
     return { kind: 'entity', token: quote[1], start: cursor - quote[1].length };
+  }
+
+  // Directly after `{%` (start of a statement block) → suggest statement keywords.
+  const statement = before.match(/\{%[-+]?\s*([A-Za-z_]*)$/);
+  if (statement) {
+    return { kind: 'statement', token: statement[1], start: cursor - statement[1].length };
   }
 
   // Right after a pipe → suggest Jinja filters.
@@ -114,6 +125,12 @@ function buildSuggestions(ctx: TokenContext, entities: HaEntity[]): Suggestion[]
     return JINJA_FILTERS
       .filter(f => f.startsWith(t))
       .map(f => ({ label: f, detail: 'filter', apply: f }));
+  }
+
+  if (ctx.kind === 'statement') {
+    return JINJA_STATEMENTS
+      .filter(s => s.startsWith(t))
+      .map(s => ({ label: s, detail: 'statement', apply: s }));
   }
 
   return HA_FUNCTIONS
@@ -302,7 +319,28 @@ export const HaTemplateEditor: React.FC<HaTemplateEditorProps> = ({ title, initi
     validatedTextRef.current = trimmed;
     setValidating(true);
     setResult(null);
-    vscode.validateHaTemplate(id, `{{ ${trimmed} }}`);
+    // Send the raw expression — the extension wraps a bare value in {{ }} and leaves a
+    // template that already has {{ }}/{% %} delimiters untouched.
+    vscode.validateHaTemplate(id, trimmed);
+  };
+
+  /** Insert a delimiter pair at the caret and drop the cursor between the braces. */
+  const insertDelimiter = (open: string, close: string) => {
+    const ta = textareaRef.current;
+    const start = ta?.selectionStart ?? value.length;
+    const end = ta?.selectionEnd ?? start;
+    const inner = value.slice(start, end);
+    const next = `${value.slice(0, start)}${open}${inner}${close}${value.slice(end)}`;
+    const caret = start + open.length + inner.length;
+    setValue(next);
+    setResult(null);
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      el.focus();
+      el.selectionStart = el.selectionEnd = caret;
+      refreshSuggestions(next, caret);
+    });
   };
 
   return (
@@ -313,7 +351,25 @@ export const HaTemplateEditor: React.FC<HaTemplateEditorProps> = ({ title, initi
           <span onClick={onClose} title="Close" style={{ cursor: 'pointer', fontSize: '16px', opacity: 0.7 }}>×</span>
         </div>
 
-        <label style={labelStyle}>Jinja expression (no braces — wrapped automatically)</label>
+        <label style={labelStyle}>Jinja template</label>
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '4px' }}>
+          <button
+            type="button"
+            style={{ ...secondaryButtonStyle, padding: '2px 8px', fontFamily: 'var(--vscode-editor-font-family, monospace)' }}
+            title="Insert an output block"
+            onMouseDown={e => { e.preventDefault(); insertDelimiter('{{ ', ' }}'); }}
+          >
+            &#123;&#123; &#125;&#125;
+          </button>
+          <button
+            type="button"
+            style={{ ...secondaryButtonStyle, padding: '2px 8px', fontFamily: 'var(--vscode-editor-font-family, monospace)' }}
+            title="Insert a statement block (if / for / set)"
+            onMouseDown={e => { e.preventDefault(); insertDelimiter('{% ', ' %}'); }}
+          >
+            &#123;% %&#125;
+          </button>
+        </div>
         <div style={{ position: 'relative' }}>
           <textarea
             ref={textareaRef}
@@ -371,7 +427,9 @@ export const HaTemplateEditor: React.FC<HaTemplateEditorProps> = ({ title, initi
           )}
         </div>
         <p style={{ fontSize: '10px', opacity: 0.55, margin: '4px 0 0' }}>
-          Autocomplete: entity IDs inside quotes, functions on a word, filters after <code>|</code>. ⌃Space to trigger.
+          A bare expression is wrapped in <code>&#123;&#123; &#125;&#125;</code>; use <code>&#123;% %&#125;</code> for
+          <code> if</code>/<code>for</code>/<code>set</code> logic. Autocomplete: entities in quotes, functions on a word,
+          filters after <code>|</code>. ⌃Space to trigger.
         </p>
 
         {result && (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import { Widget, HaBinding, HaAction, HaEntity } from '../../types';
 import { useEditorStore } from '../../store/useEditorStore';
 import { vscode } from '../../utils/vscodeApi';
@@ -159,10 +159,92 @@ interface HaBindingSectionProps {
 
 function normalize(binding: HaBinding): HaBinding | undefined {
   const hasAction = binding.action !== undefined && binding.action.kind !== 'none';
-  return binding.displayEntityId || binding.displayTemplate || binding.actionEntityId || hasAction
+  const hasPropertyTemplates = !!binding.propertyTemplates && Object.keys(binding.propertyTemplates).length > 0;
+  return binding.displayEntityId || binding.displayTemplate || binding.actionEntityId || hasAction || hasPropertyTemplates
     ? binding
     : undefined;
 }
+
+/** Common openHASP widget properties, offered as a datalist when naming a property template. */
+const COMMON_PROPERTIES = [
+  'text', 'value_str', 'val', 'min', 'max', 'hidden', 'options',
+  'bg_color', 'text_color', 'border_color', 'line_color', 'src', 'value_font',
+];
+
+interface PropertyTemplatesEditorProps {
+  entries: Record<string, string>;
+  commonProperties: string[];
+  onEdit: (property: string, template: string) => void;
+  onRemove: (property: string) => void;
+}
+
+/** Lists the widget's per-property Jinja templates and lets the user add, edit or remove them. */
+const PropertyTemplatesEditor: React.FC<PropertyTemplatesEditorProps> = ({ entries, commonProperties, onEdit, onRemove }) => {
+  const [newProp, setNewProp] = useState('');
+  const listId = useId();
+  const rows = Object.entries(entries);
+  const trimmed = newProp.trim();
+  const canAdd = trimmed.length > 0 && !(trimmed in entries);
+
+  const removeButtonStyle: React.CSSProperties = {
+    background: 'var(--vscode-input-background)', color: 'var(--vscode-foreground)',
+    border: '1px solid var(--vscode-input-border)', borderRadius: '2px',
+    padding: '0 7px', cursor: 'pointer', fontSize: '12px', lineHeight: '20px',
+  };
+
+  const add = () => {
+    if (!canAdd) return;
+    onEdit(trimmed, '');
+    setNewProp('');
+  };
+
+  return (
+    <div style={{ marginTop: '12px' }}>
+      <span style={labelStyle}>Property templates (any property)</span>
+      {rows.length === 0 && (
+        <p style={{ fontSize: '11px', opacity: 0.6, margin: '4px 0' }}>
+          None yet — drive any property (text, val, hidden, bg_color…) with a Jinja template.
+        </p>
+      )}
+      {rows.map(([prop, tpl]) => (
+        <div key={prop} style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '4px 0' }}>
+          <code style={{ fontSize: '11px', minWidth: '64px', maxWidth: '64px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={prop}>
+            {prop}
+          </code>
+          <span
+            style={{ flex: 1, fontSize: '11px', opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--vscode-editor-font-family, monospace)' }}
+            title={tpl}
+          >
+            {tpl.trim() || '(empty)'}
+          </span>
+          <button style={{ ...editTemplateButtonStyle, marginTop: 0 }} onClick={() => onEdit(prop, tpl)}>Edit</button>
+          <button style={removeButtonStyle} title={`Remove ${prop}`} onClick={() => onRemove(prop)}>×</button>
+        </div>
+      ))}
+
+      <datalist id={listId}>
+        {commonProperties.map(p => <option key={p} value={p} />)}
+      </datalist>
+      <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
+        <input
+          list={listId}
+          value={newProp}
+          placeholder="property name…"
+          onChange={e => setNewProp(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+          style={{ ...inputStyle, flex: 1 }}
+        />
+        <button
+          disabled={!canAdd}
+          onClick={add}
+          style={{ ...editTemplateButtonStyle, marginTop: 0, opacity: canAdd ? 1 : 0.5, cursor: canAdd ? 'pointer' : 'not-allowed' }}
+        >
+          Add &amp; edit…
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUpdate }) => {
   const { haEntities, haEntitiesError, haEntitiesLoading, setHaEntitiesLoading } = useEditorStore();
@@ -180,16 +262,14 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [widget.id]);
 
-  // Fetch the entity list once on first use so the picker isn't empty the first time a widget is bound.
+  // Fetch the entity list once on first use so the picker (and template autocomplete) isn't empty.
   useEffect(() => {
-    if (bindable && haEntities.length === 0 && !haEntitiesLoading && !haEntitiesError) {
+    if (haEntities.length === 0 && !haEntitiesLoading && !haEntitiesError) {
       setHaEntitiesLoading(true);
       vscode.requestHaEntities();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bindable]);
-
-  if (!bindable) return null;
+  }, []);
 
   const binding = widget.haBinding;
   const action = binding?.action;
@@ -197,9 +277,21 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
   const actionEntityDomains = actionDomains(widget.obj);
   const actionEntities = haEntities.filter(e => actionEntityDomains.includes(e.domain));
   const actionEntity = binding?.actionEntityId ? haEntities.find(e => e.entityId === binding.actionEntityId) : undefined;
+  const propertyTemplates = binding?.propertyTemplates ?? {};
 
   const applyPatch = (patch: Partial<HaBinding>) => {
     onUpdate(normalize({ ...(binding ?? {}), ...patch }));
+  };
+
+  const setPropertyTemplate = (property: string, template: string) => {
+    const next = { ...propertyTemplates, [property]: template };
+    applyPatch({ propertyTemplates: next });
+  };
+
+  const removePropertyTemplate = (property: string) => {
+    const next = { ...propertyTemplates };
+    delete next[property];
+    applyPatch({ propertyTemplates: Object.keys(next).length ? next : undefined });
   };
 
   const handleRefresh = () => {
@@ -268,6 +360,7 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
         </p>
       )}
 
+      {bindable && (<>
       {/* Display source: bind to a single entity, or supply a free-form Jinja template. */}
       <div style={fieldStyle}>
         <span style={labelStyle}>Display source</span>
@@ -405,6 +498,20 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
           </div>
         </>
       )}
+      </>)}
+
+      {/* Property templates: drive any widget property with a Jinja template. Available for every
+          widget type, not just display-bindable ones. */}
+      <PropertyTemplatesEditor
+        entries={propertyTemplates}
+        commonProperties={COMMON_PROPERTIES}
+        onEdit={(property, template) => setTemplateEditor({
+          title: `Property Template — ${property}`,
+          value: template,
+          apply: v => (v.trim() ? setPropertyTemplate(property, v) : removePropertyTemplate(property)),
+        })}
+        onRemove={removePropertyTemplate}
+      />
 
       {/* Action: only for widgets that fire an interactive openHASP event. The entity picker
           is optional — openHASP page navigation doesn't need one. */}

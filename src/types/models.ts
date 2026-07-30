@@ -97,9 +97,13 @@ export interface HaBinding {
   displayProperty?: 'val' | 'text';
   /** 'auto' derives the state template from haBindingDefaults; a string is a raw Jinja override (no braces). */
   stateTemplate?: 'auto' | string;
-  /** Free-form Jinja template (no braces) used as the display value, independent of any single
-   *  entity. When set, it takes precedence over displayEntityId/stateTemplate for the display block. */
+  /** Free-form Jinja template used as the display value, independent of any single entity.
+   *  When set, it takes precedence over displayEntityId/stateTemplate for the display property.
+   *  May be a bare expression (wrapped in {{ }}) or a full template with its own {{ }}/{% %} blocks. */
   displayTemplate?: string;
+  /** Arbitrary widget property → Jinja template. Lets any property (not just the display value)
+   *  be driven by a template. Each value may be bare or a full {{ }}/{% %} template. */
+  propertyTemplates?: Record<string, string>;
   /** Entity the action targets when action.kind is 'service'. Not used for 'page' actions. */
   actionEntityId?: string;
   action?: HaAction;
