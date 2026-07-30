@@ -18,16 +18,16 @@ function emitPropertyLines(property: string, rawTemplate: string): string[] {
 }
 
 /**
- * Lines under a widget's `properties:` block, or null to omit the block entirely.
- * A widget with no haBinding produces nothing (the caller skips it). A widget with a
- * binding but no display source and no property templates is a deliberate action-only binding.
+ * The effective `property → raw Jinja template` map for a widget's Home Assistant binding,
+ * before any {{ }} wrapping or YAML formatting. This is the single source of truth for "which
+ * properties a widget drives from Home Assistant", shared by the config generator (which turns
+ * it into YAML) and the live canvas preview (which renders each template to show real values).
+ * Ordered so explicit propertyTemplates override the display value on a key collision.
  */
-function buildPropertyLines(widget: Widget): string[] | null {
+export function widgetPropertyTemplates(widget: Widget): Map<string, string> {
   const binding = widget.haBinding;
-  if (!binding) return null;
-
-  // Ordered so explicit propertyTemplates can override the display value on a key collision.
   const merged = new Map<string, string>();
+  if (!binding) return merged;
 
   if (binding.displayTemplate) {
     // Free-form Jinja template as the display value — not tied to a single entity.
@@ -46,6 +46,16 @@ function buildPropertyLines(widget: Widget): string[] | null {
     if (prop.trim() && tpl.trim()) merged.set(prop.trim(), tpl);
   }
 
+  return merged;
+}
+
+/**
+ * Lines under a widget's `properties:` block, or null to omit the block entirely.
+ * A widget with no haBinding produces nothing (the caller skips it). A widget with a
+ * binding but no display source and no property templates is a deliberate action-only binding.
+ */
+function buildPropertyLines(widget: Widget): string[] | null {
+  const merged = widgetPropertyTemplates(widget);
   if (merged.size === 0) return null;
 
   const lines: string[] = [];

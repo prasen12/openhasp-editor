@@ -61,6 +61,10 @@ class VSCodeAPIWrapper {
   public validateHaTemplate(requestId: string, template: string): void {
     this.postMessage({ type: 'haValidateTemplate', requestId, template });
   }
+
+  public evaluateHaWidgets(requestId: string, widgets: Array<{ key: string; obj: string; haBinding: unknown }>): void {
+    this.postMessage({ type: 'haEvaluateWidgets', requestId, widgets });
+  }
 }
 
 export const vscode = new VSCodeAPIWrapper();

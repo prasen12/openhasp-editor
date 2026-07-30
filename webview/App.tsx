@@ -17,13 +17,14 @@ import { Widget } from './types';
 import { findWidgetAtPoint, getWidgetAbsoluteRect, isDescendant } from './utils/widgetHierarchy';
 import { collectWithDescendants, cloneWidgetsForPaste } from './utils/clipboard';
 import { getPageLabel } from './utils/pageLabel';
+import { requestHaEvaluation } from './utils/haValues';
 
 const GRID = 10;
 
 export const App: React.FC = () => {
   let { pages, setPages, setFileName, isDirty, currentPageId, setCurrentPage, addWidget, addWidgets, updateWidget, deleteWidgets,
         canvasWidth, canvasHeight, setCanvasSize, deviceProperties, setDeviceProperties, setFontOverrideUri, setImageUris,
-        setHaEntities, setHaEntitiesError } = useEditorStore();
+        setHaEntities, setHaEntitiesError, haPreviewEnabled, setHaWidgetValues, setHaValuesError } = useEditorStore();
   const { pushHistory } = useHistoryStore();
   const { selectedWidgetIds, clearSelection, selectWidget, selectMultiple } = useSelectionStore();
   const { copiedWidgets, pasteCount, copyWidgets, registerPaste } = useClipboardStore();
@@ -158,6 +159,11 @@ export const App: React.FC = () => {
         case 'haEntitiesError':
           setHaEntitiesError(message.message);
           break;
+
+        case 'haWidgetValues':
+          if (message.error) setHaValuesError(message.error);
+          else { setHaWidgetValues(message.values); setHaValuesError(null); }
+          break;
       }
     };
 
@@ -179,6 +185,13 @@ export const App: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [pages, pushHistory]);
+
+  // Live HA preview: re-render bound widgets' templates when enabled and whenever bindings change.
+  useEffect(() => {
+    if (!haPreviewEnabled) return;
+    const timer = setTimeout(() => requestHaEvaluation(pages), 500);
+    return () => clearTimeout(timer);
+  }, [pages, haPreviewEnabled]);
 
   const handleDragStart = (event: DragStartEvent) => {
     if (event.active.data.current?.type === 'canvas-widget') {

@@ -3,8 +3,10 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Widget } from '../../types';
 import { useSelectionStore } from '../../store/useSelectionStore';
+import { useEditorStore } from '../../store/useEditorStore';
 import { WidgetRenderer } from '../Rendering/WidgetRenderer';
 import { getChildWidgets } from '../../utils/widgetHierarchy';
+import { applyHaValues, widgetValueKey } from '../../utils/haValues';
 import { useResize, ResizeDirection } from '../../hooks/useResize';
 import { getBoxStyle, getPaddingStyle } from '../../utils/styleProps';
 import './CanvasWidget.css';
@@ -19,8 +21,15 @@ interface CanvasWidgetProps {
 
 export const CanvasWidget: React.FC<CanvasWidgetProps> = ({ widget, pageId, allWidgets, interactive = true }) => {
   const { selectWidget, isSelected } = useSelectionStore();
+  const { haPreviewEnabled, haWidgetValues } = useEditorStore();
   const selected = interactive && isSelected(widget.id);
   const { startResize } = useResize(widget.id, pageId);
+
+  // Live HA preview: overlay rendered values onto the widget's visual/content props (geometry
+  // stays design-time so dragging and resizing aren't disturbed).
+  const resolved = haPreviewEnabled
+    ? applyHaValues(widget, haWidgetValues[widgetValueKey(pageId, widget.id)])
+    : widget;
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `widget-${pageId}-${widget.id}`,
@@ -52,9 +61,9 @@ export const CanvasWidget: React.FC<CanvasWidgetProps> = ({ widget, pageId, allW
     height: widget.h || 30,
     transform: CSS.Translate.toString(transform),
     cursor: interactive ? (isDragging ? 'grabbing' : 'grab') : 'default',
-    opacity: (isDragging ? 0.5 : 1) * ((widget.opacity ?? 255) / 255),
+    opacity: (isDragging ? 0.5 : 1) * ((resolved.opacity ?? 255) / 255),
     overflow: childWidgets.length > 0 ? 'hidden' : undefined,
-    ...getBoxStyle(widget),
+    ...getBoxStyle(resolved),
   };
 
   return (
@@ -66,8 +75,8 @@ export const CanvasWidget: React.FC<CanvasWidgetProps> = ({ widget, pageId, allW
       {...(interactive ? listeners : undefined)}
       {...(interactive ? attributes : undefined)}
     >
-      <div style={{ width: '100%', height: '100%', ...getPaddingStyle(widget) }}>
-        <WidgetRenderer widget={widget} />
+      <div style={{ width: '100%', height: '100%', ...getPaddingStyle(resolved) }}>
+        <WidgetRenderer widget={resolved} />
       </div>
 
       {childWidgets.map(child => (

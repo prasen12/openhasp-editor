@@ -5,11 +5,23 @@ import { useSelectionStore } from '../../store/useSelectionStore';
 import { CanvasWidget } from './CanvasWidget';
 import { Grid } from './Grid';
 import { getRootWidgets } from '../../utils/widgetHierarchy';
+import { collectHaWidgets, requestHaEvaluation } from '../../utils/haValues';
 import './Canvas.css';
 
 export const Canvas: React.FC = () => {
-  const { pages, currentPageId, canvasWidth, canvasHeight } = useEditorStore();
+  const {
+    pages, currentPageId, canvasWidth, canvasHeight,
+    haPreviewEnabled, setHaPreviewEnabled, haValuesLoading, haValuesError,
+  } = useEditorStore();
   const { clearSelection } = useSelectionStore();
+
+  const boundWidgetCount = collectHaWidgets(pages).length;
+
+  const togglePreview = () => {
+    const next = !haPreviewEnabled;
+    setHaPreviewEnabled(next);
+    if (next) requestHaEvaluation(pages);
+  };
 
   const { setNodeRef } = useDroppable({
     id: 'canvas',
@@ -32,8 +44,35 @@ export const Canvas: React.FC = () => {
     }
   };
 
+  const previewTitle = haValuesError
+    ? `Live HA values — error: ${haValuesError}`
+    : haPreviewEnabled
+      ? 'Live Home Assistant values shown — click to turn off'
+      : `Show live Home Assistant values (${boundWidgetCount} bound widget${boundWidgetCount === 1 ? '' : 's'})`;
+
   return (
     <div className="canvas-container">
+      <div className="canvas-toolbar">
+        <button
+          type="button"
+          className={`ha-preview-toggle ${haPreviewEnabled ? 'active' : ''}`}
+          onClick={togglePreview}
+          disabled={boundWidgetCount === 0 && !haPreviewEnabled}
+          title={previewTitle}
+        >
+          {haValuesLoading ? '⏳' : '⚡'} Live HA{haPreviewEnabled && haValuesError ? ' ⚠' : ''}
+        </button>
+        {haPreviewEnabled && (
+          <button
+            type="button"
+            className="ha-preview-refresh"
+            onClick={() => requestHaEvaluation(pages)}
+            title="Refresh values from Home Assistant"
+          >
+            ⟳
+          </button>
+        )}
+      </div>
       <div className="canvas-viewport">
         <div
           ref={setNodeRef}

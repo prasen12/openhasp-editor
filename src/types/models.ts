@@ -159,11 +159,21 @@ export type ToWebviewMessage =
   | { type: 'navigateTo'; pageId: number; widgetId?: number }
   | { type: 'haEntities'; entities: HaEntity[] }
   | { type: 'haEntitiesError'; message: string }
-  | { type: 'haTemplateResult'; requestId: string; ok: boolean; rendered?: string; error?: string };
+  | { type: 'haTemplateResult'; requestId: string; ok: boolean; rendered?: string; error?: string }
+  | { type: 'haWidgetValues'; requestId: string; values: Record<string, Record<string, string>>; error?: string };
+
+/** A widget whose Home Assistant templates should be rendered for the live canvas preview. */
+export interface HaWidgetEvalRequest {
+  /** Stable key identifying the widget instance (e.g. "<pageId>:<widgetId>"). */
+  key: string;
+  obj: string;
+  haBinding: HaBinding;
+}
 
 export type ToExtensionMessage =
   | { type: 'update'; pages: Page[]; deviceProperties?: DeviceProperties }
   | { type: 'export'; pages: Page[]; format: 'jsonl' | 'json' }
   | { type: 'ready' }
   | { type: 'haRequestEntities' }
-  | { type: 'haValidateTemplate'; requestId: string; template: string };
+  | { type: 'haValidateTemplate'; requestId: string; template: string }
+  | { type: 'haEvaluateWidgets'; requestId: string; widgets: HaWidgetEvalRequest[] };

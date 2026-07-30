@@ -5,6 +5,42 @@
   align-items: center;
   justify-content: center;
   background-color: var(--vscode-editor-background);
+  position: relative;
+}
+
+.canvas-toolbar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 200;
+  display: flex;
+  gap: 4px;
+}
+
+.canvas-toolbar button {
+  background: var(--vscode-input-background);
+  color: var(--vscode-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  line-height: 16px;
+}
+
+.canvas-toolbar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.canvas-toolbar .ha-preview-toggle.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border-color: var(--vscode-button-background);
+}
+
+.canvas-toolbar .ha-preview-refresh {
+  padding: 3px 7px;
 }
 
 .canvas-viewport {

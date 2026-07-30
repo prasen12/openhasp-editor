@@ -3,12 +3,13 @@ import { JsonlParser } from './jsonl/parser';
 import { JsonlSerializer } from './jsonl/serializer';
 import { HaspJsonParser } from './haspJson/parser';
 import { HaspJsonSerializer } from './haspJson/serializer';
-import { Page, DeviceProperties, ToWebviewMessage, ToExtensionMessage } from './types/models';
+import { Page, DeviceProperties, Widget, ToWebviewMessage, ToExtensionMessage } from './types/models';
 import * as path from 'path';
 import * as fs from 'fs';
 import { decodeLvglBinFileToDataUri } from './lvgl/lvglBinDecoder';
 import { getHaConfig, getHaConnectionIssue, fetchEntities, renderTemplate, logHa } from './haClient';
 import { wrapTemplate } from './haTemplate';
+import { widgetPropertyTemplates } from './haConfigGenerator';
 
 function isHaspJsonFile(document: vscode.TextDocument): boolean {
   return document.uri.fsPath.endsWith('.hasp.json');
@@ -249,6 +250,61 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
             logHa(`Template validation failed: ${errorMessage}`);
             webviewPanel.webview.postMessage({
               type: 'haTemplateResult', requestId, ok: false, error: errorMessage,
+            } satisfies ToWebviewMessage);
+          }
+          break;
+        }
+
+        case 'haEvaluateWidgets': {
+          const { requestId, widgets } = message;
+          logHa(`Webview requested live values for ${widgets.length} widget(s).`);
+          try {
+            const haConfig = await getHaConfig(this.context);
+            if (!haConfig) {
+              const issue = await getHaConnectionIssue(this.context);
+              webviewPanel.webview.postMessage({
+                type: 'haWidgetValues', requestId, values: {},
+                error: issue ?? 'Not connected to Home Assistant.',
+              } satisfies ToWebviewMessage);
+              break;
+            }
+
+            // Resolve each widget to its property→template map, then render every distinct
+            // template just once (many widgets often reference the same entity/expression).
+            const perWidget = widgets.map(w => ({
+              key: w.key,
+              templates: widgetPropertyTemplates({ obj: w.obj, haBinding: w.haBinding } as Widget),
+            }));
+
+            const distinct = new Set<string>();
+            for (const { templates } of perWidget) {
+              for (const tpl of templates.values()) distinct.add(wrapTemplate(tpl));
+            }
+
+            const rendered = new Map<string, string>();
+            await Promise.all([...distinct].map(async wrapped => {
+              const result = await renderTemplate(haConfig, wrapped);
+              if (result.ok) rendered.set(wrapped, result.rendered.trim());
+            }));
+
+            const values: Record<string, Record<string, string>> = {};
+            for (const { key, templates } of perWidget) {
+              const props: Record<string, string> = {};
+              for (const [prop, tpl] of templates) {
+                const value = rendered.get(wrapTemplate(tpl));
+                if (value !== undefined) props[prop] = value;
+              }
+              if (Object.keys(props).length) values[key] = props;
+            }
+
+            webviewPanel.webview.postMessage({
+              type: 'haWidgetValues', requestId, values,
+            } satisfies ToWebviewMessage);
+          } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            logHa(`Widget evaluation failed: ${errorMessage}`);
+            webviewPanel.webview.postMessage({
+              type: 'haWidgetValues', requestId, values: {}, error: errorMessage,
             } satisfies ToWebviewMessage);
           }
           break;

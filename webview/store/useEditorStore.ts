@@ -14,6 +14,11 @@ interface EditorState {
   haEntities: HaEntity[];
   haEntitiesError: string | null;
   haEntitiesLoading: boolean;
+  /** Live canvas preview of Home Assistant values: on/off, resolved values, and last error. */
+  haPreviewEnabled: boolean;
+  haWidgetValues: Record<string, Record<string, string>>;
+  haValuesError: string | null;
+  haValuesLoading: boolean;
 
   setPages: (pages: Page[]) => void;
   setFileName: (fileName: string) => void;
@@ -25,6 +30,10 @@ interface EditorState {
   setHaEntities: (entities: HaEntity[]) => void;
   setHaEntitiesError: (message: string) => void;
   setHaEntitiesLoading: (loading: boolean) => void;
+  setHaPreviewEnabled: (enabled: boolean) => void;
+  setHaWidgetValues: (values: Record<string, Record<string, string>>) => void;
+  setHaValuesError: (message: string | null) => void;
+  setHaValuesLoading: (loading: boolean) => void;
 
   addPage: () => void;
   addOverlayPage: () => void;
@@ -54,6 +63,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   haEntities: [],
   haEntitiesError: null,
   haEntitiesLoading: false,
+  haPreviewEnabled: false,
+  haWidgetValues: {},
+  haValuesError: null,
+  haValuesLoading: false,
 
   setPages: (pages: Page[]) => {
     set({ pages, isDirty: false });
@@ -80,6 +93,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setHaEntitiesError: (message: string) => set({ haEntitiesError: message, haEntitiesLoading: false }),
 
   setHaEntitiesLoading: (loading: boolean) => set({ haEntitiesLoading: loading }),
+
+  setHaPreviewEnabled: (enabled: boolean) => set({ haPreviewEnabled: enabled }),
+
+  setHaWidgetValues: (values: Record<string, Record<string, string>>) =>
+    set({ haWidgetValues: values, haValuesLoading: false }),
+
+  setHaValuesError: (message: string | null) => set({ haValuesError: message, haValuesLoading: false }),
+
+  setHaValuesLoading: (loading: boolean) => set({ haValuesLoading: loading }),
 
   addPage: () => {
     const pages = get().pages;
