@@ -30,7 +30,7 @@ export const LabelWidget: React.FC<LabelWidgetProps> = ({ widget }) => {
 
   return (
     <div className="widget-label" style={style}>
-      {translateLVGLToMDI(decodeUnicodeEscapes(widget.text || 'Label'))}
+      {translateLVGLToMDI(decodeUnicodeEscapes((widget.text ?? '') === '' ? 'Label' : widget.text))}
     </div>
   );
 };

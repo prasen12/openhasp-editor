@@ -12,8 +12,8 @@ import { Widget } from '../types';
  *   U+E000–EFFF → U+F0000 + (cp − 0xE000)
  *   U+F000–F8FF → U+F1000 + (cp − 0xF000)
  */
-export function translateLVGLToMDI(text: string): string {
-  return [...text].map(char => {
+export function translateLVGLToMDI(text: unknown): string {
+  return [...String(text ?? '')].map(char => {
     const cp = char.codePointAt(0)!;
     if (cp >= 0xE000 && cp <= 0xEFFF) {
       return String.fromCodePoint(0xF0000 + (cp - 0xE000));
@@ -32,8 +32,8 @@ export function translateLVGLToMDI(text: string): string {
  * Also logs the codepoints of any BMP PUA characters to the console so you can
  * open DevTools (Help → Toggle Developer Tools) to see exactly which glyphs are needed.
  */
-export function decodeUnicodeEscapes(text: string): string {
-  const decoded = text.replace(/\\u([0-9A-Fa-f]{4})/g, (_, hex) =>
+export function decodeUnicodeEscapes(text: unknown): string {
+  const decoded = String(text ?? '').replace(/\\u([0-9A-Fa-f]{4})/g, (_, hex) =>
     String.fromCharCode(parseInt(hex, 16))
   );
 

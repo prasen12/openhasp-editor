@@ -95,3 +95,57 @@
 .page-tab-overlay {
   font-style: italic;
 }
+
+.page-delete-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-delete-dialog {
+  width: min(360px, 90vw);
+  background: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  padding: 16px;
+}
+
+.page-delete-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.page-delete-message {
+  margin: 0 0 16px;
+  font-size: 12px;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.page-delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.page-delete-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 2px;
+  border: 1px solid var(--vscode-input-border);
+  background: var(--vscode-button-secondaryBackground, var(--vscode-input-background));
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+}
+
+.page-delete-btn-danger {
+  border-color: var(--vscode-inputValidation-errorBorder, #be1100);
+  background: var(--vscode-inputValidation-errorBackground, #5a1d1d);
+  color: var(--vscode-errorForeground, #f48771);
+}

@@ -29,7 +29,7 @@ export const ButtonWidget: React.FC<ButtonWidgetProps> = ({ widget }) => {
 
   return (
     <div className="widget-button" style={style}>
-      {translateLVGLToMDI(decodeUnicodeEscapes(widget.text || 'Button'))}
+      {translateLVGLToMDI(decodeUnicodeEscapes((widget.text ?? '') === '' ? 'Button' : widget.text))}
     </div>
   );
 };

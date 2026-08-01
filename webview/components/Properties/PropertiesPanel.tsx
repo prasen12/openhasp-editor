@@ -86,6 +86,56 @@ const templateToggleStyle: React.CSSProperties = {
   fontFamily: 'var(--vscode-editor-font-family, monospace)',
 };
 
+/** Read-only, word-wrapped view of a bound property's Jinja template (click to edit). */
+const templateReadoutStyle: React.CSSProperties = {
+  cursor: 'pointer',
+  background: 'var(--vscode-input-background)',
+  border: '1px solid var(--vscode-input-border)',
+  borderRadius: '2px',
+  padding: '4px 6px',
+  fontSize: '11px',
+  fontFamily: 'var(--vscode-editor-font-family, monospace)',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+  maxHeight: '88px',
+  overflowY: 'auto',
+  boxSizing: 'border-box',
+};
+
+const templateActionButtonStyle: React.CSSProperties = {
+  background: 'var(--vscode-input-background)',
+  color: 'var(--vscode-foreground)',
+  border: '1px solid var(--vscode-input-border)',
+  borderRadius: '2px',
+  padding: '2px 8px',
+  fontSize: '11px',
+  cursor: 'pointer',
+};
+
+/** Shared template-mode block: a wrapped read-only view plus Edit / revert-to-value actions. */
+const TemplateValueView: React.FC<{
+  label: string;
+  template: string;
+  onEdit: () => void;
+  onClear: () => void;
+}> = ({ label, template, onEdit, onClear }) => (
+  <div style={{ ...fieldStyle, marginBottom: '8px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <span style={labelStyle}>{label}</span>
+      <span style={{ fontSize: '10px', opacity: 0.55, fontFamily: 'var(--vscode-editor-font-family, monospace)' }}>
+        ƒx template
+      </span>
+    </div>
+    <div style={templateReadoutStyle} title="Click to edit this template" onClick={onEdit}>
+      {template}
+    </div>
+    <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+      <button type="button" style={templateActionButtonStyle} onClick={onEdit}>Edit template…</button>
+      <button type="button" style={templateActionButtonStyle} onClick={onClear}>Use value</button>
+    </div>
+  </div>
+);
+
 interface FieldProps {
   label: string;
   type?: 'text' | 'number' | 'color' | 'select' | 'textarea' | 'checkbox';
@@ -132,32 +182,12 @@ const Field: React.FC<FieldProps> = ({
   // Template mode replaces whatever control this field would normally render.
   if (hasTemplate) {
     return (
-      <div style={{ ...fieldStyle, marginBottom: '8px' }}>
-        <span style={labelStyle}>{label}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <code
-            title={template}
-            onClick={onOpenTemplate}
-            style={{
-              flex: 1, minWidth: 0, cursor: 'pointer',
-              background: 'var(--vscode-input-background)', border: '1px solid var(--vscode-input-border)',
-              borderRadius: '2px', padding: '3px 6px', fontSize: '11px',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              fontFamily: 'var(--vscode-editor-font-family, monospace)',
-            }}
-          >
-            ƒx {template}
-          </code>
-          <button
-            type="button"
-            title="Use the normal control instead"
-            onClick={onClearTemplate}
-            style={{ ...templateToggleStyle, opacity: 0.85 }}
-          >
-            ×
-          </button>
-        </div>
-      </div>
+      <TemplateValueView
+        label={label}
+        template={template!}
+        onEdit={onOpenTemplate!}
+        onClear={onClearTemplate!}
+      />
     );
   }
 
@@ -625,10 +655,17 @@ export const PropertiesPanel: React.FC = () => {
         <div style={sectionStyle}>
           <div style={sectionTitleStyle}>Text</div>
           {/* Text input with icon picker button */}
-          <div style={{ ...fieldStyle, marginBottom: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-              <span style={labelStyle}>Text</span>
-              {propTemplates.text === undefined && (
+          {propTemplates.text !== undefined ? (
+            <TemplateValueView
+              label="Text"
+              template={propTemplates.text}
+              onEdit={() => setTemplateEditorKey('text')}
+              onClear={() => setPropTemplate('text', '')}
+            />
+          ) : (
+            <div style={{ ...fieldStyle, marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                <span style={labelStyle}>Text</span>
                 <button
                   type="button"
                   title="Set text with a Jinja template"
@@ -638,33 +675,7 @@ export const PropertiesPanel: React.FC = () => {
                 >
                   {'{ }'}
                 </button>
-              )}
-            </div>
-            {propTemplates.text !== undefined ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <code
-                  title={propTemplates.text}
-                  onClick={() => setTemplateEditorKey('text')}
-                  style={{
-                    flex: 1, minWidth: 0, cursor: 'pointer',
-                    background: 'var(--vscode-input-background)', border: '1px solid var(--vscode-input-border)',
-                    borderRadius: '2px', padding: '3px 6px', fontSize: '11px',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    fontFamily: 'var(--vscode-editor-font-family, monospace)',
-                  }}
-                >
-                  ƒx {propTemplates.text}
-                </code>
-                <button
-                  type="button"
-                  title="Use the normal text field instead"
-                  onClick={() => setPropTemplate('text', '')}
-                  style={{ ...templateToggleStyle, opacity: 0.85 }}
-                >
-                  ×
-                </button>
               </div>
-            ) : (
               <div style={{ display: 'flex', gap: '4px' }}>
                 <input
                   type="text"
@@ -690,8 +701,8 @@ export const PropertiesPanel: React.FC = () => {
                   ⊕
                 </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
           {showIconPicker && (
             <IconPicker
               anchorEl={iconBtnRef.current}
