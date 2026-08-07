@@ -1,6 +1,6 @@
 import { DeviceProperties, Page, Widget } from './types/models';
-import { defaultDisplayProperty, getAutoStateTemplate, resolveDisplayProperty } from './haBindingDefaults';
-import { wrapTemplate } from './haTemplate';
+import { actionEntityList, defaultDisplayProperty, getAutoStateTemplate, resolveDisplayProperty } from './haBindingDefaults';
+import { hasJinjaDelimiters, stripWrappingQuotes, wrapTemplate } from './haTemplate';
 
 /**
  * Emit a `"<property>": <value>` line (or block). The template is wrapped to a real Jinja
@@ -64,6 +64,18 @@ function buildPropertyLines(widget: Widget): string[] | null {
 }
 
 /**
+ * The `- service: …` line of an action. Home Assistant's script engine accepts a template here,
+ * but a bare `{{ … }}` would parse as a YAML flow mapping — so a templated service is emitted as
+ * a quoted scalar (single quotes doubled), or a literal block when it spans lines.
+ */
+function emitServiceLines(service: string): string[] {
+  const value = stripWrappingQuotes(service);
+  if (!hasJinjaDelimiters(value)) return [`        - service: ${value}`];
+  if (!value.includes('\n')) return [`        - service: '${value.replace(/'/g, "''")}'`];
+  return [`        - service: |-`, ...value.split('\n').map(line => `            ${line}`)];
+}
+
+/**
  * Full `event:` block lines (including the trigger key), or null if the widget has no action.
  * The action itself is already fully resolved (which service, or which openHASP page command)
  * by the properties panel — this just transcribes it into YAML, it doesn't re-derive anything.
@@ -86,12 +98,16 @@ function buildEventBlockLines(widget: Widget, deviceSlug: string): string[] | nu
     ];
   }
 
-  if (!binding.actionEntityId) return null;
+  const targets = actionEntityList(binding.actionEntityId);
+  if (targets.length === 0) return null;
   return [
     `      "${action.trigger}":`,
-    `        - service: ${action.service}`,
+    ...emitServiceLines(action.service),
     `          target:`,
-    `            entity_id: ${binding.actionEntityId}`,
+    // One target stays an inline scalar; several become a YAML list.
+    ...(targets.length === 1
+      ? [`            entity_id: ${targets[0]}`]
+      : [`            entity_id:`, ...targets.map(id => `              - ${id}`)]),
     ...(action.dataLines?.length ? [`          data:`, ...action.dataLines] : []),
   ];
 }

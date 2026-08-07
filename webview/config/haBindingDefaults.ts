@@ -112,9 +112,34 @@ const DOMAIN_ACTIONS: Record<string, ActionOption[]> = {
   input_select: [{ id: 'select_option', label: 'Select option', trigger: 'changed', service: 'input_select.select_option', dataLines: ['            option: "{{ text }}"'] }],
 };
 
-/** Curated action options for an entity, based on its domain. Empty if the domain has no catalog entry. */
-export function actionOptionsForEntity(entityId: string): ActionOption[] {
-  return DOMAIN_ACTIONS[entityId.split('.')[0]] ?? [];
+/**
+ * The action's target entities as a list. A binding holds a plain string for a single target
+ * (the shape every design file used before multi-select) and an array for several; a
+ * comma-separated string — the only way to name more than one target by hand before this —
+ * is split so those bindings load as a proper multi-selection.
+ */
+export function actionEntityList(value: string | string[] | undefined): string[] {
+  if (!value) return [];
+  const ids = Array.isArray(value) ? value : value.split(',');
+  return ids.map(id => id.trim()).filter(id => id.length > 0);
+}
+
+/** Store one target as a plain string and several as an array, so single-target files don't change shape. */
+export function packActionEntities(ids: string[]): string | string[] | undefined {
+  if (ids.length === 0) return undefined;
+  return ids.length === 1 ? ids[0] : ids;
+}
+
+/** The domain shared by every selected entity, or undefined when the selection is mixed or empty. */
+export function commonActionDomain(entityIds: string[]): string | undefined {
+  if (entityIds.length === 0) return undefined;
+  const [first, ...rest] = entityIds.map(id => id.split('.')[0]);
+  return rest.every(d => d === first) ? first : undefined;
+}
+
+/** Curated action options for a domain. Empty if the domain has no catalog entry. */
+export function actionOptionsForDomain(domain: string | undefined): ActionOption[] {
+  return (domain && DOMAIN_ACTIONS[domain]) || [];
 }
 
 export interface PageCommand {
@@ -131,9 +156,9 @@ export const PAGE_COMMANDS: PageCommand[] = [
   { id: 'goto', label: 'Go to page…', target: 'goto' },
 ];
 
-/** The action to pre-select right after an entity is picked — the first curated option, or none. */
-export function firstCuratedAction(entityId: string): HaAction {
-  const options = actionOptionsForEntity(entityId);
+/** The action to pre-select right after the first entity is picked — the first curated option, or none. */
+export function firstCuratedAction(domain: string | undefined): HaAction {
+  const options = actionOptionsForDomain(domain);
   if (options.length === 0) return { kind: 'none' };
   const opt = options[0];
   return { kind: 'service', trigger: opt.trigger, service: opt.service, dataLines: opt.dataLines };
@@ -161,8 +186,19 @@ const PAGE_TARGET_LABELS: Record<'next' | 'prev' | 'back', string> = {
   back: 'the previous page (back)',
 };
 
+/** Up to two target names, then "+N more" — keeps the summary readable for a large selection. */
+function formatTargets(entityIds: string[], friendlyName: (entityId: string) => string | undefined): string {
+  const labels = entityIds.slice(0, 2).map(id => formatEntityLabel(id, friendlyName(id)));
+  const extra = entityIds.length - labels.length;
+  return `${labels.join(' and ')}${extra > 0 ? ` +${extra} more` : ''}`;
+}
+
 /** Plain-English summary of the currently-configured action, built directly from the stored action — nothing re-derived. */
-export function describeAction(action: HaAction | undefined, entityId?: string, friendlyName?: string): string {
+export function describeAction(
+  action: HaAction | undefined,
+  entityIds: string[] = [],
+  friendlyName: (entityId: string) => string | undefined = () => undefined,
+): string {
   if (!action || action.kind === 'none') return 'No action.';
   const verb = TRIGGER_VERBS[action.trigger] ?? `On "${action.trigger}"`;
 
@@ -172,5 +208,5 @@ export function describeAction(action: HaAction | undefined, entityId?: string, 
   }
 
   if (!action.service) return `${verb} — no service set yet.`;
-  return `${verb} calls ${action.service}${entityId ? ` on ${formatEntityLabel(entityId, friendlyName)}` : ''}.`;
+  return `${verb} calls ${action.service}${entityIds.length ? ` on ${formatTargets(entityIds, friendlyName)}` : ''}.`;
 }

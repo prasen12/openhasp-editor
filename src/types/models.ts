@@ -104,8 +104,10 @@ export interface HaBinding {
   /** Arbitrary widget property → Jinja template. Lets any property (not just the display value)
    *  be driven by a template. Each value may be bare or a full {{ }}/{% %} template. */
   propertyTemplates?: Record<string, string>;
-  /** Entity the action targets when action.kind is 'service'. Not used for 'page' actions. */
-  actionEntityId?: string;
+  /** Entities the action targets when action.kind is 'service'. Not used for 'page' actions.
+   *  Stored as a plain string for a single target (and read as comma-separated for anything
+   *  hand-written that way), or as an array once more than one entity is selected. */
+  actionEntityId?: string | string[];
   action?: HaAction;
 }
 
@@ -121,6 +123,26 @@ export interface HaEntity {
   domain: string;
   state: string;
   friendlyName?: string;
+}
+
+/** One documented parameter of a Home Assistant service, as reported by GET /api/services. */
+export interface HaServiceField {
+  name: string;
+  required?: boolean;
+  description?: string;
+  example?: string;
+}
+
+/** A callable Home Assistant service, flattened from the per-domain shape /api/services returns. */
+export interface HaService {
+  /** Fully-qualified `domain.service`, e.g. "light.turn_on". */
+  service: string;
+  domain: string;
+  name?: string;
+  description?: string;
+  fields: HaServiceField[];
+  /** True when the service accepts a target (so `target: entity_id:` is meaningful). */
+  hasTarget: boolean;
 }
 
 export interface Page {
@@ -159,6 +181,8 @@ export type ToWebviewMessage =
   | { type: 'navigateTo'; pageId: number; widgetId?: number }
   | { type: 'haEntities'; entities: HaEntity[] }
   | { type: 'haEntitiesError'; message: string }
+  | { type: 'haServices'; services: HaService[] }
+  | { type: 'haServicesError'; message: string }
   | { type: 'haTemplateResult'; requestId: string; ok: boolean; rendered?: string; error?: string }
   | { type: 'haWidgetValues'; requestId: string; values: Record<string, Record<string, string>>; error?: string };
 
@@ -175,5 +199,6 @@ export type ToExtensionMessage =
   | { type: 'export'; pages: Page[]; format: 'jsonl' | 'json' }
   | { type: 'ready' }
   | { type: 'haRequestEntities' }
+  | { type: 'haRequestServices' }
   | { type: 'haValidateTemplate'; requestId: string; template: string }
   | { type: 'haEvaluateWidgets'; requestId: string; widgets: HaWidgetEvalRequest[] };

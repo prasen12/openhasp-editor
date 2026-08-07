@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as http from 'http';
 import * as https from 'https';
-import { HaEntity } from './types/models';
+import { HaEntity, HaService, HaServiceField } from './types/models';
 import { log } from './outputChannel';
 
 const TOKEN_SECRET_KEY = 'openhasp.haToken';
@@ -192,4 +192,56 @@ export async function fetchEntities(config: HaConfig): Promise<HaEntity[]> {
 
   logHa(`fetchEntities: parsed ${entities.length} entities.`);
   return entities;
+}
+
+/**
+ * Collect a service's parameter names. Home Assistant nests optional parameters inside
+ * collapsible groups (`fields: { advanced_fields: { collapsed: true, fields: {…} } }`),
+ * so groups are flattened rather than reported as a field of their own.
+ */
+function collectServiceFields(fields: any): HaServiceField[] {
+  if (!fields || typeof fields !== 'object') return [];
+  const out: HaServiceField[] = [];
+  for (const [name, def] of Object.entries<any>(fields)) {
+    if (def && typeof def === 'object' && def.fields) {
+      out.push(...collectServiceFields(def.fields));
+      continue;
+    }
+    out.push({
+      name,
+      required: def?.required === true,
+      description: typeof def?.description === 'string' ? def.description : undefined,
+      example: def?.example !== undefined ? String(def.example) : undefined,
+    });
+  }
+  return out;
+}
+
+/** GET /api/services — the service registry, flattened to one entry per `domain.service`. */
+export async function fetchServices(config: HaConfig): Promise<HaService[]> {
+  const domains = await requestJson(config, '/api/services');
+  if (!Array.isArray(domains)) {
+    logHa('fetchServices: /api/services did not return an array — returning an empty list.');
+    return [];
+  }
+
+  const services: HaService[] = [];
+  for (const entry of domains) {
+    const domain: string | undefined = entry?.domain;
+    if (!domain || typeof domain !== 'string' || !entry.services || typeof entry.services !== 'object') continue;
+    for (const [name, def] of Object.entries<any>(entry.services)) {
+      services.push({
+        service: `${domain}.${name}`,
+        domain,
+        name: typeof def?.name === 'string' ? def.name : undefined,
+        description: typeof def?.description === 'string' ? def.description : undefined,
+        fields: collectServiceFields(def?.fields),
+        hasTarget: !!def?.target,
+      });
+    }
+  }
+
+  services.sort((a, b) => a.service.localeCompare(b.service));
+  logHa(`fetchServices: parsed ${services.length} services.`);
+  return services;
 }

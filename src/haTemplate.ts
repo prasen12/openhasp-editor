@@ -13,6 +13,12 @@ export function hasJinjaDelimiters(s: string): boolean {
   return /\{\{|\{%|\{#/.test(s);
 }
 
+/** Remove one matching pair of surrounding quotes, e.g. a service pasted as `"{{ … }}"`. */
+export function stripWrappingQuotes(s: string): string {
+  const match = s.trim().match(/^(['"])([\s\S]*)\1$/);
+  return match ? match[2] : s.trim();
+}
+
 /** A bare expression is wrapped in `{{ }}`; a string that already has delimiters is returned as-is. */
 export function wrapTemplate(expr: string): string {
   const trimmed = expr.trim();

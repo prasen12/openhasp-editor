@@ -24,7 +24,8 @@ const GRID = 10;
 export const App: React.FC = () => {
   let { pages, setPages, setFileName, isDirty, currentPageId, setCurrentPage, addWidget, addWidgets, updateWidget, deleteWidgets,
         canvasWidth, canvasHeight, setCanvasSize, deviceProperties, setDeviceProperties, setFontOverrideUri, setImageUris,
-        setHaEntities, setHaEntitiesError, haPreviewEnabled, setHaWidgetValues, setHaValuesError } = useEditorStore();
+        setHaEntities, setHaEntitiesError, setHaServices, setHaServicesError,
+        haPreviewEnabled, setHaWidgetValues, setHaValuesError } = useEditorStore();
   const { pushHistory } = useHistoryStore();
   const { selectedWidgetIds, clearSelection, selectWidget, selectMultiple } = useSelectionStore();
   const { copiedWidgets, pasteCount, copyWidgets, registerPaste } = useClipboardStore();
@@ -158,6 +159,14 @@ export const App: React.FC = () => {
 
         case 'haEntitiesError':
           setHaEntitiesError(message.message);
+          break;
+
+        case 'haServices':
+          setHaServices(message.services);
+          break;
+
+        case 'haServicesError':
+          setHaServicesError(message.message);
           break;
 
         case 'haWidgetValues':

@@ -74,7 +74,8 @@ export interface HaBinding {
   stateTemplate?: 'auto' | string;
   displayTemplate?: string;
   propertyTemplates?: Record<string, string>;
-  actionEntityId?: string;
+  /** One entity id, or several once more than one action target is selected. */
+  actionEntityId?: string | string[];
   action?: HaAction;
 }
 
@@ -88,6 +89,26 @@ export interface HaEntity {
   domain: string;
   state: string;
   friendlyName?: string;
+}
+
+/** One documented parameter of a Home Assistant service, as reported by GET /api/services. */
+export interface HaServiceField {
+  name: string;
+  required?: boolean;
+  description?: string;
+  example?: string;
+}
+
+/** A callable Home Assistant service. Mirrors HaService in src/types/models.ts. */
+export interface HaService {
+  /** Fully-qualified `domain.service`, e.g. "light.turn_on". */
+  service: string;
+  domain: string;
+  name?: string;
+  description?: string;
+  fields: HaServiceField[];
+  /** True when the service accepts a target (so `target: entity_id:` is meaningful). */
+  hasTarget: boolean;
 }
 
 export interface Page {

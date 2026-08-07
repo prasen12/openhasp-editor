@@ -7,7 +7,7 @@ import { Page, DeviceProperties, Widget, ToWebviewMessage, ToExtensionMessage } 
 import * as path from 'path';
 import * as fs from 'fs';
 import { decodeLvglBinFileToDataUri } from './lvgl/lvglBinDecoder';
-import { getHaConfig, getHaConnectionIssue, fetchEntities, renderTemplate, logHa } from './haClient';
+import { getHaConfig, getHaConnectionIssue, fetchEntities, fetchServices, renderTemplate, logHa } from './haClient';
 import { wrapTemplate } from './haTemplate';
 import { widgetPropertyTemplates } from './haConfigGenerator';
 
@@ -223,6 +223,31 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
             logHa(`Entity request failed: ${message}`);
             webviewPanel.webview.postMessage({
               type: 'haEntitiesError',
+              message,
+            } satisfies ToWebviewMessage);
+          }
+          break;
+
+        case 'haRequestServices':
+          logHa('Webview requested the Home Assistant service list.');
+          try {
+            const haConfig = await getHaConfig(this.context);
+            if (!haConfig) {
+              const issue = await getHaConnectionIssue(this.context);
+              logHa(`Service request refused: ${issue}`);
+              webviewPanel.webview.postMessage({
+                type: 'haServicesError',
+                message: issue ?? 'Not connected to Home Assistant. Run "openHASP: Connect to Home Assistant" first.',
+              } satisfies ToWebviewMessage);
+              break;
+            }
+            const services = await fetchServices(haConfig);
+            webviewPanel.webview.postMessage({ type: 'haServices', services } satisfies ToWebviewMessage);
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            logHa(`Service request failed: ${message}`);
+            webviewPanel.webview.postMessage({
+              type: 'haServicesError',
               message,
             } satisfies ToWebviewMessage);
           }

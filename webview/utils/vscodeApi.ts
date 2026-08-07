@@ -58,6 +58,10 @@ class VSCodeAPIWrapper {
     this.postMessage({ type: 'haRequestEntities' });
   }
 
+  public requestHaServices(): void {
+    this.postMessage({ type: 'haRequestServices' });
+  }
+
   public validateHaTemplate(requestId: string, template: string): void {
     this.postMessage({ type: 'haValidateTemplate', requestId, template });
   }

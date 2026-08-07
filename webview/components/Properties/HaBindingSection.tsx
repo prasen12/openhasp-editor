@@ -3,9 +3,10 @@ import { Widget, HaBinding, HaAction, HaEntity } from '../../types';
 import { useEditorStore } from '../../store/useEditorStore';
 import { vscode } from '../../utils/vscodeApi';
 import { HaTemplateEditor } from './HaTemplateEditor';
+import { HaServiceEditor } from './HaServiceEditor';
 import {
   isHaBindable, supportsAction, actionDomains, defaultDisplayProperty, describeAutoDisplay, describeAction,
-  actionOptionsForEntity, firstCuratedAction, PAGE_COMMANDS,
+  actionOptionsForDomain, actionEntityList, packActionEntities, commonActionDomain, firstCuratedAction, PAGE_COMMANDS,
 } from '../../config/haBindingDefaults';
 
 interface TemplateEditorState {
@@ -21,15 +22,13 @@ const editTemplateButtonStyle: React.CSSProperties = {
 };
 
 /** Which <select> value represents the currently-stored action, so the dropdown stays in sync. */
-function actionSelectValue(action: HaAction | undefined, entityId?: string): string {
+function actionSelectValue(action: HaAction | undefined, domain?: string): string {
   if (!action || action.kind === 'none') return 'none';
   if (action.kind === 'page') {
     return typeof action.target === 'number' ? 'page:goto' : `page:${action.target}`;
   }
-  if (entityId) {
-    const match = actionOptionsForEntity(entityId).find(o => o.service === action.service && o.trigger === action.trigger);
-    if (match) return `svc:${match.id}`;
-  }
+  const match = actionOptionsForDomain(domain).find(o => o.service === action.service && o.trigger === action.trigger);
+  if (match) return `svc:${match.id}`;
   return 'custom';
 }
 
@@ -51,6 +50,63 @@ const STATE_BADGE_COLORS: Record<string, string> = {
 };
 
 const MAX_VISIBLE_RESULTS = 100;
+
+const dropdownStyle: React.CSSProperties = {
+  position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '2px', zIndex: 10,
+  maxHeight: '220px', overflowY: 'auto',
+  background: 'var(--vscode-dropdown-background, var(--vscode-input-background))',
+  border: '1px solid var(--vscode-input-border)', borderRadius: '2px',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+};
+
+interface EntityOptionListProps {
+  matches: HaEntity[];
+  emptyHint: string;
+  /** Entity ids already chosen — ticked in the list (multi-select only). */
+  chosen?: Set<string>;
+  onPick: (entityId: string) => void;
+}
+
+/** The scrollable result list shared by the single- and multi-select pickers. */
+const EntityOptionList: React.FC<EntityOptionListProps> = ({ matches, emptyHint, chosen, onPick }) => {
+  const visible = matches.slice(0, MAX_VISIBLE_RESULTS);
+  return (
+    <div style={dropdownStyle}>
+      {visible.length === 0 && (
+        <div style={{ padding: '6px 8px', fontSize: '11px', opacity: 0.6 }}>{emptyHint}</div>
+      )}
+      {visible.map(e => (
+        <div
+          key={e.entityId}
+          onMouseDown={ev => ev.preventDefault()}
+          onClick={() => onPick(e.entityId)}
+          onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--vscode-list-hoverBackground)')}
+          onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}
+          title={e.entityId}
+          style={{
+            display: 'flex', gap: '6px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}
+        >
+          {chosen && <span style={{ width: '10px', flexShrink: 0, opacity: 0.8 }}>{chosen.has(e.entityId) ? '✓' : ''}</span>}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.friendlyName ?? e.entityId}</span>
+        </div>
+      ))}
+      {matches.length > visible.length && (
+        <div style={{ padding: '4px 8px', fontSize: '10px', opacity: 0.5, borderTop: '1px solid var(--vscode-panel-border)' }}>
+          Showing {visible.length} of {matches.length} — keep typing to narrow it down
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Entities whose id or friendly name contains the query; everything when the query is empty. */
+function matchEntities(entities: HaEntity[], query: string): HaEntity[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return entities;
+  return entities.filter(e => e.entityId.toLowerCase().includes(q) || e.friendlyName?.toLowerCase().includes(q));
+}
 
 interface EntityPickerProps {
   entities: HaEntity[];
@@ -79,11 +135,7 @@ const EntityPicker: React.FC<EntityPickerProps> = ({ entities, value, placeholde
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, entities]);
 
-  const q = query.trim().toLowerCase();
-  const matches = q
-    ? entities.filter(e => e.entityId.toLowerCase().includes(q) || e.friendlyName?.toLowerCase().includes(q))
-    : entities;
-  const visible = matches.slice(0, MAX_VISIBLE_RESULTS);
+  const matches = matchEntities(entities, query);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -113,40 +165,98 @@ const EntityPicker: React.FC<EntityPickerProps> = ({ entities, value, placeholde
         )}
       </div>
       {open && (
-        <div
-          style={{
-            position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '2px', zIndex: 10,
-            maxHeight: '220px', overflowY: 'auto',
-            background: 'var(--vscode-dropdown-background, var(--vscode-input-background))',
-            border: '1px solid var(--vscode-input-border)', borderRadius: '2px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        <EntityOptionList
+          matches={matches}
+          emptyHint={emptyHint}
+          onPick={entityId => {
+            const picked = entities.find(e => e.entityId === entityId);
+            onSelect(entityId);
+            setQuery(picked?.friendlyName ?? entityId);
+            setOpen(false);
           }}
-        >
-          {visible.length === 0 && (
-            <div style={{ padding: '6px 8px', fontSize: '11px', opacity: 0.6 }}>{emptyHint}</div>
-          )}
-          {visible.map(e => (
-            <div
-              key={e.entityId}
-              onMouseDown={ev => ev.preventDefault()}
-              onClick={() => { onSelect(e.entityId); setQuery(e.friendlyName ?? e.entityId); setOpen(false); }}
-              onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--vscode-list-hoverBackground)')}
-              onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}
-              title={e.entityId}
-              style={{
-                padding: '4px 8px', fontSize: '12px', cursor: 'pointer',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}
-            >
-              {e.friendlyName ?? e.entityId}
-            </div>
-          ))}
-          {matches.length > visible.length && (
-            <div style={{ padding: '4px 8px', fontSize: '10px', opacity: 0.5, borderTop: '1px solid var(--vscode-panel-border)' }}>
-              Showing {visible.length} of {matches.length} — keep typing to narrow it down
-            </div>
-          )}
+        />
+      )}
+    </div>
+  );
+};
+
+interface MultiEntityPickerProps {
+  entities: HaEntity[];
+  selected: string[];
+  placeholder: string;
+  onChange: (entityIds: string[]) => void;
+  emptyHint: string;
+}
+
+/**
+ * Multi-select variant of EntityPicker: chosen entities appear as removable chips (each with
+ * its state dot) and the search box stays open so several can be picked in a row. Clicking an
+ * already-chosen entity in the list removes it again.
+ */
+const MultiEntityPicker: React.FC<MultiEntityPickerProps> = ({ entities, selected, placeholder, onChange, emptyHint }) => {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const chosen = new Set(selected);
+
+  const toggle = (entityId: string) => {
+    onChange(chosen.has(entityId) ? selected.filter(id => id !== entityId) : [...selected, entityId]);
+    setQuery('');
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      {selected.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '4px' }}>
+          {selected.map(id => {
+            const entity = entities.find(e => e.entityId === id);
+            return (
+              <span
+                key={id}
+                title={entity ? `${id} — ${entity.state}` : id}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '4px', maxWidth: '100%',
+                  background: 'var(--vscode-badge-background, var(--vscode-input-background))',
+                  color: 'var(--vscode-badge-foreground, var(--vscode-foreground))',
+                  border: '1px solid var(--vscode-input-border)', borderRadius: '10px',
+                  padding: '1px 4px 1px 6px', fontSize: '11px',
+                }}
+              >
+                <span style={{
+                  width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
+                  background: entity ? (STATE_BADGE_COLORS[entity.state] ?? '#2196F3') : '#555555',
+                }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {entity?.friendlyName ?? id}
+                </span>
+                <span
+                  onClick={() => onChange(selected.filter(other => other !== id))}
+                  title={`Remove ${id}`}
+                  style={{ cursor: 'pointer', opacity: 0.7, padding: '0 2px' }}
+                >
+                  ×
+                </span>
+              </span>
+            );
+          })}
         </div>
+      )}
+      <input
+        type="text"
+        value={query}
+        placeholder={selected.length ? 'Add another entity…' : placeholder}
+        onFocus={() => setOpen(true)}
+        onChange={e => { setQuery(e.target.value); setOpen(true); }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={e => { if (e.key === 'Escape') setOpen(false); }}
+        style={inputStyle}
+      />
+      {open && (
+        <EntityOptionList
+          matches={matchEntities(entities, query)}
+          emptyHint={emptyHint}
+          chosen={chosen}
+          onPick={toggle}
+        />
       )}
     </div>
   );
@@ -160,7 +270,8 @@ interface HaBindingSectionProps {
 function normalize(binding: HaBinding): HaBinding | undefined {
   const hasAction = binding.action !== undefined && binding.action.kind !== 'none';
   const hasPropertyTemplates = !!binding.propertyTemplates && Object.keys(binding.propertyTemplates).length > 0;
-  return binding.displayEntityId || binding.displayTemplate || binding.actionEntityId || hasAction || hasPropertyTemplates
+  const hasActionEntity = actionEntityList(binding.actionEntityId).length > 0;
+  return binding.displayEntityId || binding.displayTemplate || hasActionEntity || hasAction || hasPropertyTemplates
     ? binding
     : undefined;
 }
@@ -253,6 +364,7 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
     widget.haBinding?.displayTemplate ? 'template' : 'entity',
   );
   const [templateEditor, setTemplateEditor] = useState<TemplateEditorState | null>(null);
+  const [serviceEditorOpen, setServiceEditorOpen] = useState(false);
   const bindable = isHaBindable(widget.obj);
   const actionable = supportsAction(widget.obj);
 
@@ -276,7 +388,10 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
   const displayEntity = binding?.displayEntityId ? haEntities.find(e => e.entityId === binding.displayEntityId) : undefined;
   const actionEntityDomains = actionDomains(widget.obj);
   const actionEntities = haEntities.filter(e => actionEntityDomains.includes(e.domain));
-  const actionEntity = binding?.actionEntityId ? haEntities.find(e => e.entityId === binding.actionEntityId) : undefined;
+  const actionEntityIds = actionEntityList(binding?.actionEntityId);
+  // Curated actions are per-domain, so they only apply while every target shares one domain.
+  const actionDomain = commonActionDomain(actionEntityIds);
+  const friendlyNameOf = (entityId: string) => haEntities.find(e => e.entityId === entityId)?.friendlyName;
   const propertyTemplates = binding?.propertyTemplates ?? {};
 
   const applyPatch = (patch: Partial<HaBinding>) => {
@@ -320,8 +435,8 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
       return;
     }
 
-    if (value.startsWith('svc:') && binding?.actionEntityId) {
-      const opt = actionOptionsForEntity(binding.actionEntityId).find(o => o.id === value.slice(4));
+    if (value.startsWith('svc:') && actionEntityIds.length > 0) {
+      const opt = actionOptionsForDomain(actionDomain).find(o => o.id === value.slice(4));
       if (opt) applyPatch({ action: { kind: 'service', trigger: opt.trigger, service: opt.service, dataLines: opt.dataLines } });
     }
   };
@@ -518,16 +633,20 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
       {actionable && (
         <>
           <div style={{ ...fieldStyle, marginTop: '12px' }}>
-            <span style={labelStyle}>Action entity (only needed for a Home Assistant service call)</span>
-            <EntityPicker
+            <span style={labelStyle}>Action entities (only needed for a Home Assistant service call)</span>
+            <MultiEntityPicker
               key={`action-${widget.id}`}
               entities={actionEntities}
-              value={binding?.actionEntityId}
+              selected={actionEntityIds}
               placeholder={`Search ${actionEntityDomains.join(', ')}…`}
-              onSelect={entityId => applyPatch({ actionEntityId: entityId, action: firstCuratedAction(entityId) })}
-              onClear={() => applyPatch({
-                actionEntityId: undefined,
-                action: action?.kind === 'service' ? { kind: 'none' } : action,
+              onChange={next => applyPatch({
+                actionEntityId: packActionEntities(next),
+                // Seed a curated action with the first target; later picks leave the choice alone.
+                action: next.length === 0 && action?.kind === 'service'
+                  ? { kind: 'none' }
+                  : actionEntityIds.length === 0 && next.length === 1
+                    ? firstCuratedAction(commonActionDomain(next))
+                    : action,
               })}
               emptyHint={
                 haEntities.length === 0
@@ -537,19 +656,23 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
             />
           </div>
 
-          {binding?.actionEntityId && stateBadge(actionEntity)}
+          {actionEntityIds.length > 1 && !actionDomain && (
+            <p style={{ fontSize: '11px', opacity: 0.7, margin: '0 0 8px' }}>
+              Targets span several domains — pick the service yourself with “Custom…”.
+            </p>
+          )}
 
           <div style={fieldStyle}>
             <span style={labelStyle}>Action</span>
             <select
-              value={actionSelectValue(action, binding?.actionEntityId)}
+              value={actionSelectValue(action, actionDomain)}
               onChange={e => handleActionSelect(e.target.value)}
               style={{ ...inputStyle, cursor: 'pointer' }}
             >
               <option value="none">— None —</option>
-              {binding?.actionEntityId && actionOptionsForEntity(binding.actionEntityId).length > 0 && (
+              {actionOptionsForDomain(actionDomain).length > 0 && (
                 <optgroup label="Home Assistant">
-                  {actionOptionsForEntity(binding.actionEntityId).map(opt => (
+                  {actionOptionsForDomain(actionDomain).map(opt => (
                     <option key={opt.id} value={`svc:${opt.id}`}>{opt.label}</option>
                   ))}
                 </optgroup>
@@ -578,11 +701,20 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
 
           {action && action.kind !== 'none' && (
             <p style={{ fontSize: '11px', opacity: 0.7, margin: '0 0 8px' }}>
-              {describeAction(action, binding?.actionEntityId, actionEntity?.friendlyName)}
+              {describeAction(action, actionEntityIds, friendlyNameOf)}
             </p>
           )}
 
-          {action?.kind === 'service' && actionSelectValue(action, binding?.actionEntityId) === 'custom' && (
+          {action?.kind === 'service' && (
+            <button
+              style={{ ...editTemplateButtonStyle, marginTop: 0, marginBottom: '8px' }}
+              onClick={() => setServiceEditorOpen(true)}
+            >
+              Edit &amp; validate service call…
+            </button>
+          )}
+
+          {action?.kind === 'service' && actionSelectValue(action, actionDomain) === 'custom' && (
             <>
               <div style={fieldStyle}>
                 <span style={labelStyle}>openHASP event (trigger)</span>
@@ -606,16 +738,23 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
               </div>
               <div style={fieldStyle}>
                 <span style={labelStyle}>Data (optional YAML line, e.g. brightness_pct: "&#123;&#123; val &#125;&#125;")</span>
-                <input
-                  type="text"
-                  value={action.dataLines?.[0]?.trim() ?? ''}
-                  placeholder='brightness_pct: "{{ val }}"'
-                  onChange={e => {
-                    const line = e.target.value.trim();
-                    applyPatch({ action: { ...action, dataLines: line ? [`            ${line}`] : [] } });
-                  }}
-                  style={inputStyle}
-                />
+                {(action.dataLines?.length ?? 0) > 1 ? (
+                  // Multi-line data can't round-trip through a single input — edit it in the modal instead.
+                  <p style={{ fontSize: '11px', opacity: 0.7, margin: '2px 0' }}>
+                    {action.dataLines!.length} data lines — use “Edit &amp; validate service call…” above.
+                  </p>
+                ) : (
+                  <input
+                    type="text"
+                    value={action.dataLines?.[0]?.trim() ?? ''}
+                    placeholder='brightness_pct: "{{ val }}"'
+                    onChange={e => {
+                      const line = e.target.value.trim();
+                      applyPatch({ action: { ...action, dataLines: line ? [`            ${line}`] : [] } });
+                    }}
+                    style={inputStyle}
+                  />
+                )}
               </div>
             </>
           )}
@@ -634,6 +773,19 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
         >
           Clear Home Assistant binding
         </button>
+      )}
+
+      {serviceEditorOpen && action?.kind === 'service' && (
+        <HaServiceEditor
+          initialService={action.service}
+          initialDataLines={action.dataLines ?? []}
+          entityIds={actionEntityIds}
+          trigger={action.trigger}
+          onSave={(service, dataLines) => applyPatch({
+            action: { kind: 'service', trigger: action.trigger, service, dataLines: dataLines.length ? dataLines : undefined },
+          })}
+          onClose={() => setServiceEditorOpen(false)}
+        />
       )}
 
       {templateEditor && (

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Page, Widget, DeviceProperties, HaEntity } from '../types';
+import { Page, Widget, DeviceProperties, HaEntity, HaService } from '../types';
 
 interface EditorState {
   pages: Page[];
@@ -14,6 +14,10 @@ interface EditorState {
   haEntities: HaEntity[];
   haEntitiesError: string | null;
   haEntitiesLoading: boolean;
+  /** Home Assistant's service registry, used to validate a widget's action service call. */
+  haServices: HaService[];
+  haServicesError: string | null;
+  haServicesLoading: boolean;
   /** Live canvas preview of Home Assistant values: on/off, resolved values, and last error. */
   haPreviewEnabled: boolean;
   haWidgetValues: Record<string, Record<string, string>>;
@@ -30,6 +34,9 @@ interface EditorState {
   setHaEntities: (entities: HaEntity[]) => void;
   setHaEntitiesError: (message: string) => void;
   setHaEntitiesLoading: (loading: boolean) => void;
+  setHaServices: (services: HaService[]) => void;
+  setHaServicesError: (message: string) => void;
+  setHaServicesLoading: (loading: boolean) => void;
   setHaPreviewEnabled: (enabled: boolean) => void;
   setHaWidgetValues: (values: Record<string, Record<string, string>>) => void;
   setHaValuesError: (message: string | null) => void;
@@ -63,6 +70,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   haEntities: [],
   haEntitiesError: null,
   haEntitiesLoading: false,
+  haServices: [],
+  haServicesError: null,
+  haServicesLoading: false,
   haPreviewEnabled: false,
   haWidgetValues: {},
   haValuesError: null,
@@ -93,6 +103,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setHaEntitiesError: (message: string) => set({ haEntitiesError: message, haEntitiesLoading: false }),
 
   setHaEntitiesLoading: (loading: boolean) => set({ haEntitiesLoading: loading }),
+
+  setHaServices: (services: HaService[]) => set({ haServices: services, haServicesError: null, haServicesLoading: false }),
+
+  setHaServicesError: (message: string) => set({ haServicesError: message, haServicesLoading: false }),
+
+  setHaServicesLoading: (loading: boolean) => set({ haServicesLoading: loading }),
 
   setHaPreviewEnabled: (enabled: boolean) => set({ haPreviewEnabled: enabled }),
 

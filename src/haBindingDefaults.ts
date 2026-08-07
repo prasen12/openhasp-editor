@@ -23,6 +23,18 @@ function widgetKind(widgetType: string): 'toggle' | 'range' | 'option' | 'displa
   return undefined;
 }
 
+/**
+ * The action's target entities as a list. A binding holds a plain string for a single target
+ * and an array for several; a comma-separated string is split, so a hand-written multi-target
+ * binding generates the same config the editor's multi-select produces.
+ * Mirrors actionEntityList in webview/config/haBindingDefaults.ts.
+ */
+export function actionEntityList(value: string | string[] | undefined): string[] {
+  if (!value) return [];
+  const ids = Array.isArray(value) ? value : value.split(',');
+  return ids.map(id => id.trim()).filter(id => id.length > 0);
+}
+
 /** Which widget property a displayed value defaults to: 'val' (numeric/state-ish) or 'text'. */
 export function defaultDisplayProperty(widgetType: string, entityId: string): 'val' | 'text' {
   const domain = entityId.split('.')[0];
