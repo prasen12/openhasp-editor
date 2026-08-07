@@ -317,6 +317,8 @@ export class OpenHASPEditorProvider implements vscode.CustomTextEditorProvider {
               const props: Record<string, string> = {};
               for (const [prop, tpl] of templates) {
                 const value = rendered.get(wrapTemplate(tpl));
+                // Logged so a preview value that looks wrong can be traced to the exact template.
+                logHa(`${key} ${prop} ⇐ ${tpl} → ${value === undefined ? '(render failed)' : JSON.stringify(value)}`);
                 if (value !== undefined) props[prop] = value;
               }
               if (Object.keys(props).length) values[key] = props;

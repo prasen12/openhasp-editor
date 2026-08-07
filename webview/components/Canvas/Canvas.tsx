@@ -47,7 +47,7 @@ export const Canvas: React.FC = () => {
   const previewTitle = haValuesError
     ? `Live HA values — error: ${haValuesError}`
     : haPreviewEnabled
-      ? 'Live Home Assistant values shown — click to turn off'
+      ? 'Live Home Assistant values shown, refreshed every 10s — click to turn off'
       : `Show live Home Assistant values (${boundWidgetCount} bound widget${boundWidgetCount === 1 ? '' : 's'})`;
 
   return (

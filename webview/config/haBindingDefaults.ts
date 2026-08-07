@@ -16,6 +16,14 @@ const OPTION_WIDGETS = new Set(['dropdown', 'roller']);
 const DISPLAY_WIDGETS = new Set(['label', 'led', 'bar', 'gauge', 'linemeter']);
 
 const TOGGLE_DOMAINS = ['light', 'switch', 'input_boolean', 'fan'];
+
+/** Domains whose state is a word, so a toggle widget can show it as a checked flag (val).
+ *  Mirrors ON_STATE_BY_DOMAIN in src/haBindingDefaults.ts, which turns it into the template. */
+const BOOLEAN_STATE_DOMAINS = new Set([
+  'light', 'switch', 'input_boolean', 'fan', 'binary_sensor', 'automation', 'script',
+  'remote', 'siren', 'humidifier', 'schedule', 'input_button', 'lock', 'cover',
+  'person', 'device_tracker',
+]);
 const TRIGGER_DOMAINS = ['scene', 'script'];
 const RANGE_DOMAINS = ['light', 'fan', 'cover', 'number', 'input_number'];
 const OPTION_DOMAINS = ['select', 'input_select'];
@@ -58,7 +66,7 @@ export function defaultDisplayProperty(widgetType: string, entityId: string): 'v
   const kind = widgetKind(widgetType);
   if (kind === 'option') return 'text';
   if (kind === 'display') return widgetType === 'label' ? 'text' : 'val';
-  if (kind === 'toggle') return TOGGLE_DOMAINS.includes(domain) ? 'val' : 'text';
+  if (kind === 'toggle') return BOOLEAN_STATE_DOMAINS.has(domain) ? 'val' : 'text';
   return 'val';
 }
 

@@ -10,6 +10,11 @@ interface ButtonWidgetProps {
 }
 
 export const ButtonWidget: React.FC<ButtonWidgetProps> = ({ widget }) => {
+  // openHASP draws a toggled button as checked, and that state lives in `val` — which is also
+  // what an entity binding drives (1 if the entity is on). Reflect it, or a bound button would
+  // look identical whatever the entity does.
+  const isOn = widget.val === 1 || widget.val === true;
+
   const style: React.CSSProperties = {
     width: '100%',
     height: '100%',
@@ -25,6 +30,8 @@ export const ButtonWidget: React.FC<ButtonWidgetProps> = ({ widget }) => {
     userSelect: 'none',
     fontFamily: "'openHASP Icons', sans-serif",
     ...getTextStyleExtras(widget),
+    // Checked look: keep the designed colors, just brighten and ring them.
+    ...(isOn ? { filter: 'brightness(1.25)', boxShadow: 'inset 0 0 0 2px rgba(255, 255, 255, 0.85)' } : {}),
   };
 
   return (

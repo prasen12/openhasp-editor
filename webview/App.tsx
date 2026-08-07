@@ -21,6 +21,9 @@ import { requestHaEvaluation } from './utils/haValues';
 
 const GRID = 10;
 
+/** How often the live Home Assistant preview re-reads state while it's switched on. */
+const HA_PREVIEW_POLL_MS = 10000;
+
 export const App: React.FC = () => {
   let { pages, setPages, setFileName, isDirty, currentPageId, setCurrentPage, addWidget, addWidgets, updateWidget, deleteWidgets,
         canvasWidth, canvasHeight, setCanvasSize, deviceProperties, setDeviceProperties, setFontOverrideUri, setImageUris,
@@ -201,6 +204,17 @@ export const App: React.FC = () => {
     const timer = setTimeout(() => requestHaEvaluation(pages), 500);
     return () => clearTimeout(timer);
   }, [pages, haPreviewEnabled]);
+
+  // …and poll while it stays on, so a state change in Home Assistant reaches the canvas without
+  // an edit or a manual refresh. Pages are read at fire time so an edit doesn't restart the clock.
+  useEffect(() => {
+    if (!haPreviewEnabled) return;
+    const interval = setInterval(
+      () => requestHaEvaluation(useEditorStore.getState().pages),
+      HA_PREVIEW_POLL_MS,
+    );
+    return () => clearInterval(interval);
+  }, [haPreviewEnabled]);
 
   const handleDragStart = (event: DragStartEvent) => {
     if (event.active.data.current?.type === 'canvas-widget') {
