@@ -1,11 +1,55 @@
 import { Page, Widget } from '../types/models';
 import { optionsTextToArray } from './optionsFormat';
 
+/**
+ * Order a page's widgets so every parent is emitted before its children. openHASP creates
+ * objects in file order and a child references its parent via `parentid`, so the parent object
+ * must already exist when the child line is processed — a plain sort by id would break the
+ * hierarchy whenever a child happens to have a lower id than its parent. Siblings keep their
+ * id order; a widget whose parentid doesn't resolve on the page is treated as a root.
+ */
+function orderWidgetsByHierarchy(widgets: Widget[]): Widget[] {
+  const ids = new Set(widgets.map(w => w.id));
+  const childrenOf = new Map<number | undefined, Widget[]>();
+
+  for (const widget of widgets) {
+    const parentId = widget.parentid && ids.has(widget.parentid) ? widget.parentid : undefined;
+    const siblings = childrenOf.get(parentId) ?? [];
+    siblings.push(widget);
+    childrenOf.set(parentId, siblings);
+  }
+  for (const siblings of childrenOf.values()) {
+    siblings.sort((a, b) => a.id - b.id);
+  }
+
+  const ordered: Widget[] = [];
+  const visited = new Set<number>();
+  const emit = (parentId: number | undefined) => {
+    for (const widget of childrenOf.get(parentId) ?? []) {
+      if (visited.has(widget.id)) continue; // guard against parentid cycles
+      visited.add(widget.id);
+      ordered.push(widget);
+      emit(widget.id);
+    }
+  };
+  emit(undefined);
+
+  // Safety net: if a cycle left anything unvisited, append it rather than drop it.
+  for (const widget of widgets) {
+    if (!visited.has(widget.id)) {
+      visited.add(widget.id);
+      ordered.push(widget);
+    }
+  }
+
+  return ordered;
+}
+
 export class JsonlSerializer {
   static serialize(pages: Page[]): string {
     const lines: string[] = [];
 
-    for (const page of pages.sort((a, b) => a.id - b.id)) {
+    for (const page of [...pages].sort((a, b) => a.id - b.id)) {
       // Add page header with comment
       if (page.comment) {
         lines.push(JSON.stringify({ page: page.id, comment: page.comment }));
@@ -13,8 +57,8 @@ export class JsonlSerializer {
         lines.push(JSON.stringify({ page: page.id }));
       }
 
-      // Add widgets sorted by ID
-      for (const widget of page.widgets.sort((a, b) => a.id - b.id)) {
+      // Emit widgets parent-before-child so the device can resolve every parentid.
+      for (const widget of orderWidgetsByHierarchy(page.widgets)) {
         const { page: _page, description, name: _name, haBinding: _haBinding, ...rest } = widget as any;
         const obj: any = { ...rest };
 
