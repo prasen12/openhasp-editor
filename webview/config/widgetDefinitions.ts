@@ -290,7 +290,9 @@ export const widgetDefinitions: Record<string, WidgetDefinition> = {
       start_angle: 135,
       end_angle: 45,
       line_width: 20,
-      bg_color: '#2196F3'
+      line_width10: 20,
+      line_color: '#3a3a3a',
+      line_color10: '#2196F3'
     }
   },
 
