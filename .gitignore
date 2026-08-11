@@ -1,5 +1,6 @@
 out
 dist
+assets
 node_modules
 .vscode-test/
 *.vsix

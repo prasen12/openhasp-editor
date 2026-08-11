@@ -1,16 +1,40 @@
-.vscode/**
-.vscode-test/**
+# Source and build tooling
 src/**
 webview/**
+scripts/**
+out/**
+node_modules/**
+webpack.config.js
+package-lock.json
+**/tsconfig*.json
+**/.eslintrc.json
+**/*.ts
+**/*.tsx
+**/*.map
+
+# Repo / editor metadata
+.vscode/**
+.vscode-test/**
+.github/**
+.claude/**
 .gitignore
 .yarnrc
-webpack.config.js
-tsconfig.json
-tsconfig.webview.json
-**/tsconfig.json
-**/.eslintrc.json
-**/*.map
-**/*.ts
+
+# Internal docs and scratch files (README/CHANGELOG/LICENSE are shipped)
+DEVELOPMENT.md
+STATUS.md
+FIXES.md
+PHASE2-COMPLETE.md
+TROUBLESHOOTING.md
+RELEASING.md
+t.md
+enhancements.md
+new-requirements.md
+examples/**
+Screenshot*
+
+# Ship the bundles and assets
 !dist/**/*.js
-node_modules/**
-.github/**
+!dist/**/*.LICENSE.txt
+!assets/**
+!images/**

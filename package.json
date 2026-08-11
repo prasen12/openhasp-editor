@@ -4,7 +4,16 @@
   "description": "Visual drag-and-drop editor for creating and editing openHASP pages",
   "version": "0.1.0",
   "publisher": "openhasp",
+  "license": "MIT",
   "icon": "assets/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/prasen12/openhasp-editor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/prasen12/openhasp-editor/issues"
+  },
+  "homepage": "https://github.com/prasen12/openhasp-editor#readme",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -278,10 +287,13 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
+    "vscode:prepublish": "npm run icon && npm run package",
+    "icon": "node scripts/make-icon.js",
     "compile": "webpack --devtool source-map",
     "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
+    "package": "webpack --mode production",
+    "build:vsix": "node scripts/build-vsix.js",
+    "publish:vsix": "node scripts/build-vsix.js && vsce publish --no-dependencies",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
@@ -298,11 +310,13 @@
     "@typescript-eslint/eslint-plugin": "^5.53.0",
     "@typescript-eslint/parser": "^5.53.0",
     "@vscode/test-electron": "^2.2.3",
+    "@vscode/vsce": "^3.2.0",
     "css-loader": "^6.7.3",
     "eslint": "^8.34.0",
     "font-awesome": "^4.7.0",
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
+    "sharp": "^0.33.5",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.4.2",
     "typescript": "^4.9.5",

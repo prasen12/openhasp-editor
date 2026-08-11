@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build VSIX
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build extension package
+        run: npm run build:vsix
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openhasp-editor-vsix
+          path: '*.vsix'
+          if-no-files-found: error
+
+      - name: Attach VSIX to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.vsix'
+          generate_release_notes: true
+
+  # Marketplace publishing is not enabled yet. To turn it on:
+  #   1. Set a publisher ID you own in package.json (see RELEASING.md).
+  #   2. Add an Azure DevOps PAT with Marketplace->Manage scope as the VSCE_PAT secret.
+  #   3. Uncomment this job.
+  #
+  # publish:
+  #   name: Publish to Marketplace
+  #   needs: build
+  #   if: startsWith(github.ref, 'refs/tags/v')
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #         cache: npm
+  #     - run: npm ci
+  #     - run: npx vsce publish --no-dependencies
+  #       env:
+  #         VSCE_PAT: ${{ secrets.VSCE_PAT }}
