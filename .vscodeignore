@@ -20,7 +20,11 @@ package-lock.json
 .gitignore
 .yarnrc
 
-# Internal docs and scratch files (README/CHANGELOG/LICENSE are shipped)
+# Internal docs and scratch files. CHANGELOG/LICENSE are shipped; the readme that ships is
+# docs/EXTENSION_README.md, injected by `vsce package --readme-path` (see scripts/build-vsix.js),
+# so the repo's contributor-facing README.md is excluded here.
+README.md
+docs/**
 DEVELOPMENT.md
 STATUS.md
 FIXES.md

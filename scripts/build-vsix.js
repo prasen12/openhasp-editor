@@ -16,6 +16,14 @@ const { execFileSync } = require('child_process');
 const root = path.resolve(__dirname, '..');
 const pkg = require(path.join(root, 'package.json'));
 
+/**
+ * The README shipped inside the .vsix and shown on the extension's marketplace page. The repo's
+ * own README.md stays a contributor document (how to build, how the source is laid out), which
+ * is the wrong thing to greet a user with after they install — so the package gets this one
+ * instead, via `vsce package --readme-path`. Keep it in sync with `publish:vsix` in package.json.
+ */
+const README_PATH = 'docs/EXTENSION_README.md';
+
 function parseArgs(argv) {
   const opts = { lint: true, preRelease: false, outDir: root };
   for (let i = 0; i < argv.length; i++) {
@@ -63,7 +71,12 @@ function main() {
   const vsixName = `${pkg.name}-${pkg.version}.vsix`;
   const vsixPath = path.join(opts.outDir, vsixName);
 
+  if (!fs.existsSync(path.join(root, README_PATH))) {
+    throw new Error(`User-facing README not found at ${README_PATH} — it is what ships as the extension's readme.`);
+  }
+
   console.log(`Building ${pkg.name} v${pkg.version}${opts.preRelease ? ' (pre-release)' : ''}`);
+  console.log(`> extension readme: ${README_PATH}`);
 
   console.log('\n> cleaning dist/, assets/, *.vsix');
   clean(opts.outDir);
@@ -76,7 +89,7 @@ function main() {
   }
 
   // Triggers `vscode:prepublish` -> icon generation + production webpack build.
-  const vsceArgs = ['vsce', 'package', '--no-dependencies', '--out', vsixPath];
+  const vsceArgs = ['vsce', 'package', '--no-dependencies', '--readme-path', README_PATH, '--out', vsixPath];
   if (opts.preRelease) {
     vsceArgs.push('--pre-release');
   }

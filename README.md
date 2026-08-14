@@ -2,10 +2,15 @@
 
 A Visual Studio Code extension that provides a graphical drag-and-drop editor for creating and editing openHASP pages.
 
+> **Using the extension?** See the [user guide](docs/EXTENSION_README.md) — settings, Home Assistant
+> bindings, templates, and the JSONL/YAML generation workflow. That file is what ships inside the
+> `.vsix` and becomes the marketplace page (see [RELEASING.md](RELEASING.md)); this README is for
+> working on the extension itself.
+
 ## Features
 
 - **Visual Page Editor** - Drag-and-drop interface for designing openHASP pages
-- **Widget Palette** - 40+ supported openHASP widgets (buttons, sliders, gauges, etc.)
+- **Widget Palette** - 22 supported openHASP widgets (buttons, sliders, gauges, etc.)
 - **Property Inspector** - Widget-specific property sections for detailed customization
 - **Multi-Page Management** - Create and manage multiple pages
 - **Visual Preview** - See how your pages will look on the device
