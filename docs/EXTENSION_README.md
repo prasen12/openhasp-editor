@@ -8,28 +8,79 @@ the `.jsonl` layout and Home Assistant YAML your device needs.
 
 ## 1. Core features
 
-- **Visual page editor** — drag widgets from a palette onto a canvas that matches your device's
-  resolution. Move, resize, and nest widgets inside containers; the widget's `x`/`y`/`w`/`h`
-  update as you drag, with snap-to-grid.
-- **Design files** — work in a `.hasp.json` design file that keeps device properties, page names,
-  widget names/descriptions, and Home Assistant bindings alongside the layout. The plain `.jsonl`
-  the device consumes is generated from it.
-- **Live device-accurate preview** — widgets render the way LVGL draws them, using your own icon
-  font and the images from your device's LittleFS folder.
-- **Home Assistant bindings** — pick an entity per widget, choose what it does when pressed or
-  dragged, and let the extension write the Home Assistant configuration for you.
-- **Live Home Assistant values** — flip on **⚡ Live HA** in the canvas toolbar and bound widgets
-  show real entity values, refreshed every 10 seconds.
-- **Jinja template editor** — write templates for any widget property with entity/function/filter
-  autocomplete (`Ctrl`/`Cmd`+`Space`) and one-click validation against your live Home Assistant.
-- **Multi-page designs** — page tabs, plus openHASP's page 0 overlay shown on top of every page.
-- **openHASP explorer** — an activity-bar view listing every design file in the workspace, drilled
-  down to pages and widgets; click a widget to jump straight to it on the canvas.
-- **JSONL import/export** — bring an existing `.jsonl` into the editor, and export back out at any
-  time.
-- **Upload over MQTT** — push the current design to a running device without leaving the editor.
-- **Home Assistant YAML generation** — produce the `objects:` config for the openHASP integration
-  from your bindings.
+### Visual page editor
+
+Drag widgets from a palette onto a canvas that matches your device's resolution. Move, resize, and
+nest widgets inside containers; the widget's `x`/`y`/`w`/`h` update as you drag, with snap-to-grid.
+
+![Dragging widgets onto the canvas and editing their properties](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_visual_page_editor.gif)
+
+### Design files
+
+Work in a `.hasp.json` design file that keeps device properties, page names, widget
+names/descriptions, and Home Assistant bindings alongside the layout. The plain `.jsonl` the device
+consumes is generated from it.
+
+![A .hasp.json design file open in the editor](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_design_files.gif)
+
+### Live device-accurate preview
+
+Widgets render the way LVGL draws them, using your own icon font and the images from your device's
+LittleFS folder.
+
+### Home Assistant bindings
+
+Pick an entity per widget, choose what it does when pressed or dragged, and let the extension write
+the Home Assistant configuration for you.
+
+![Binding a widget to a Home Assistant entity](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_home_assitant_bindings.gif)
+
+### Live Home Assistant values
+
+Flip on **⚡ Live HA** in the canvas toolbar and bound widgets show real entity values, refreshed
+every 10 seconds.
+
+![Bound widgets showing live entity values on the canvas](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_live_homeassistant_values.gif)
+
+### Jinja template editor
+
+Write templates for any widget property with entity/function/filter autocomplete
+(`Ctrl`/`Cmd`+`Space`) and one-click validation against your live Home Assistant.
+
+![Writing and validating a Jinja template for a widget property](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_jinja_template_editor.gif)
+
+### Multi-page designs
+
+Page tabs, plus openHASP's page 0 overlay shown on top of every page.
+
+![Adding pages and the page 0 overlay](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_multi_page_design.gif)
+
+### openHASP explorer
+
+An activity-bar view listing every design file in the workspace, drilled down to pages and widgets;
+click a widget to jump straight to it on the canvas.
+
+![Navigating designs, pages, and widgets in the explorer tree](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_openhasp_explorer.gif)
+
+### JSONL import/export
+
+Bring an existing `.jsonl` into the editor, and export back out at any time.
+
+![Importing an existing JSONL file as a design](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_import_jsonl.gif)
+
+![Exporting the design back out as device-ready JSONL](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_jsonl_export.gif)
+
+### Upload over MQTT
+
+Push the current design to a running device without leaving the editor.
+
+![Uploading the design to a device over MQTT](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_upload_over_mqtt.gif)
+
+### Home Assistant YAML generation
+
+Produce the `objects:` config for the openHASP integration from your bindings.
+
+![Generating the Home Assistant objects YAML](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_homeassistant_yaml_generation.gif)
 
 ---
 
@@ -136,6 +187,8 @@ All commands are available from the Command Palette (`Ctrl`/`Cmd`+`Shift`+`P`) u
    - **Display width** and **height** in pixels — e.g. `320` × `240`, or `480` × `320`.
 4. Choose where to save the `.hasp.json` file. It opens straight into the visual editor.
 
+![Creating a new design file from the Design Files view](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/create_new_design_file.gif)
+
 You now have a one-page design. From here:
 
 - **Add widgets** — drag from the palette on the left onto the canvas. Drop a widget on top of a
@@ -163,6 +216,8 @@ If you already have an openHASP layout on a device or in a `pages.jsonl` file:
 3. Select the `.jsonl` (or `.hasp`) file to import.
 4. Choose where to save the resulting `.hasp.json`. It opens in the visual editor.
 
+![Importing a pages.jsonl file and opening it in the editor](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_import_jsonl.gif)
+
 The import keeps every property from the source lines, including ones the editor has no dedicated
 field for — those stay visible and editable under **Advanced (Custom Properties)**. The original
 `.jsonl` is left untouched; the design file is a new, richer copy that can be exported back to
@@ -178,6 +233,8 @@ The editor talks to Home Assistant to list your entities, validate templates, an
 3. Enter the base URL of your instance, e.g. `http://homeassistant.local:8123`.
 4. Paste the token when prompted.
 
+![Running Connect to Home Assistant and entering the URL and token](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/connect_to_homeassistant.gif)
+
 The extension immediately tests the connection and reports success or failure. The URL is saved to
 `openhasp.homeAssistant.url`; the token goes into VS Code's encrypted secret storage, so it is never
 written into `settings.json` or into any file you might commit.
@@ -191,6 +248,8 @@ Select a widget and open the **Home Assistant** section of the properties panel.
 independent halves: what the widget **shows**, and what it **does**.
 
 Use ⟳ next to the section title to reload the entity list whenever you add entities in HA.
+
+![Choosing a display entity and an action for a widget](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_home_assistant_bindings.gif)
 
 #### Example: a switch that controls a light
 
@@ -284,6 +343,8 @@ Both are written into the generated config:
         {% if states("sensor.outside_temperature") | float(0) < 0 %}#4FC3F7{% else %}#FFFFFF{% endif %}
 ```
 
+![Adding a property template and validating it against live Home Assistant](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_jinja_template_editor.gif)
+
 Notes that save time:
 
 - **Write expressions without braces.** A bare expression is wrapped in `{{ … }}` for you. If you
@@ -312,6 +373,8 @@ Home Assistant. They are separate steps.
 device (its web UI's file editor, or straight onto the LittleFS partition) as the pages file your
 device loads — typically `pages.jsonl`.
 
+![Exporting the design as a .jsonl file](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_jsonl_export.gif)
+
 **Or upload directly over MQTT:** set `openhasp.mqtt.host` (and port/credentials if needed), then
 right-click the design in the **Design Files** view and choose **Upload to Device**. The extension
 publishes `clearpage` `all` to `hasp/<device>/command/clearpage`, then sends each JSONL line to
@@ -319,11 +382,15 @@ publishes `clearpage` `all` to `hasp/<device>/command/clearpage`, then sends eac
 lowercased with spaces replaced by underscores. This is ideal while iterating; note it updates the
 running device, it does not persist a file on it.
 
+![Uploading the design to a running device over MQTT](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_upload_over_mqtt.gif)
+
 #### The Home Assistant configuration
 
 1. Right-click the design file in the **Design Files** view and choose
    **Generate Home Assistant Config** (or run the command with the design open).
 2. Accept the suggested filename — `<device_name>_config.yaml`. The file opens for review.
+
+![Generating the Home Assistant config from the Design Files view](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_homeassitant_yaml_generation.gif)
 
 Only widgets that have a binding appear in it. The file is organised by page, with your widget
 names as comments, and each widget addressed the openHASP way as `p<page>b<id>`:
