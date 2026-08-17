@@ -33,7 +33,7 @@ LittleFS folder.
 Pick an entity per widget, choose what it does when pressed or dragged, and let the extension write
 the Home Assistant configuration for you.
 
-![Binding a widget to a Home Assistant entity](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_home_assitant_bindings.gif)
+![Binding a widget to a Home Assistant entity](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_home_assistant_bindings.gif)
 
 ### Live Home Assistant values
 
@@ -390,7 +390,7 @@ running device, it does not persist a file on it.
    **Generate Home Assistant Config** (or run the command with the design open).
 2. Accept the suggested filename — `<device_name>_config.yaml`. The file opens for review.
 
-![Generating the Home Assistant config from the Design Files view](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_homeassitant_yaml_generation.gif)
+![Generating the Home Assistant config from the Design Files view](https://raw.githubusercontent.com/prasen12/openhasp-editor/main/docs/media/feature_homeassistant_yaml_generation.gif)
 
 Only widgets that have a binding appear in it. The file is organised by page, with your widget
 names as comments, and each widget addressed the openHASP way as `p<page>b<id>`:
