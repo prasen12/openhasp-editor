@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Long-press (`long`) actions in the Home Assistant binding catalog — push-button widgets can
+  long-press toggle the `light`, `switch`, `input_boolean`, and `fan` domains. The `long` trigger
+  also gets a friendly description, and existing eligible `long` bindings display as their
+  curated action (e.g. "Toggle (long press)") instead of "Custom…".
+
 ## [0.1.0]
 
 Initial release.

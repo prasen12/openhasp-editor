@@ -78,6 +78,16 @@ export interface ActionOption {
   dataLines?: string[];
 }
 
+interface ActionWidgetContext {
+  obj: string;
+  toggle?: boolean;
+}
+
+/** openHASP emits `long` for push buttons, but not toggle buttons or range widgets. */
+export function supportsLongPress(widget: ActionWidgetContext): boolean {
+  return (widget.obj === 'btn' || widget.obj === 'button') && widget.toggle !== true;
+}
+
 /** Curated, per-domain HA service actions — what shows in the Action dropdown once an entity is picked. */
 const DOMAIN_ACTIONS: Record<string, ActionOption[]> = {
   light: [
@@ -85,22 +95,26 @@ const DOMAIN_ACTIONS: Record<string, ActionOption[]> = {
     { id: 'turn_on', label: 'Turn on', trigger: 'up', service: 'light.turn_on' },
     { id: 'turn_off', label: 'Turn off', trigger: 'up', service: 'light.turn_off' },
     { id: 'set_brightness', label: 'Set brightness (drag)', trigger: 'changed', service: 'light.turn_on', dataLines: ['            brightness_pct: "{{ val }}"'] },
+    { id: 'toggle_long', label: 'Toggle (long press)', trigger: 'long', service: 'light.toggle' },
   ],
   switch: [
     { id: 'toggle', label: 'Toggle', trigger: 'up', service: 'switch.toggle' },
     { id: 'turn_on', label: 'Turn on', trigger: 'up', service: 'switch.turn_on' },
     { id: 'turn_off', label: 'Turn off', trigger: 'up', service: 'switch.turn_off' },
+    { id: 'toggle_long', label: 'Toggle (long press)', trigger: 'long', service: 'switch.toggle' },
   ],
   input_boolean: [
     { id: 'toggle', label: 'Toggle', trigger: 'up', service: 'input_boolean.toggle' },
     { id: 'turn_on', label: 'Turn on', trigger: 'up', service: 'input_boolean.turn_on' },
     { id: 'turn_off', label: 'Turn off', trigger: 'up', service: 'input_boolean.turn_off' },
+    { id: 'toggle_long', label: 'Toggle (long press)', trigger: 'long', service: 'input_boolean.toggle' },
   ],
   fan: [
     { id: 'toggle', label: 'Toggle', trigger: 'up', service: 'fan.toggle' },
     { id: 'turn_on', label: 'Turn on', trigger: 'up', service: 'fan.turn_on' },
     { id: 'turn_off', label: 'Turn off', trigger: 'up', service: 'fan.turn_off' },
     { id: 'set_speed', label: 'Set speed (drag)', trigger: 'changed', service: 'fan.set_percentage', dataLines: ['            percentage: "{{ val }}"'] },
+    { id: 'toggle_long', label: 'Toggle (long press)', trigger: 'long', service: 'fan.toggle' },
   ],
   cover: [
     { id: 'open', label: 'Open', trigger: 'up', service: 'cover.open_cover' },
@@ -145,9 +159,13 @@ export function commonActionDomain(entityIds: string[]): string | undefined {
   return rest.every(d => d === first) ? first : undefined;
 }
 
-/** Curated action options for a domain. Empty if the domain has no catalog entry. */
-export function actionOptionsForDomain(domain: string | undefined): ActionOption[] {
-  return (domain && DOMAIN_ACTIONS[domain]) || [];
+/** Curated action options supported by both the entity domain and the selected widget. */
+export function actionOptionsForDomain(
+  domain: string | undefined,
+  widget: ActionWidgetContext,
+): ActionOption[] {
+  const options = (domain && DOMAIN_ACTIONS[domain]) || [];
+  return options.filter(option => option.trigger !== 'long' || supportsLongPress(widget));
 }
 
 export interface PageCommand {
@@ -165,8 +183,8 @@ export const PAGE_COMMANDS: PageCommand[] = [
 ];
 
 /** The action to pre-select right after the first entity is picked — the first curated option, or none. */
-export function firstCuratedAction(domain: string | undefined): HaAction {
-  const options = actionOptionsForDomain(domain);
+export function firstCuratedAction(domain: string | undefined, widget: ActionWidgetContext): HaAction {
+  const options = actionOptionsForDomain(domain, widget);
   if (options.length === 0) return { kind: 'none' };
   const opt = options[0];
   return { kind: 'service', trigger: opt.trigger, service: opt.service, dataLines: opt.dataLines };
@@ -184,8 +202,9 @@ export function describeAutoDisplay(entityId: string, friendlyName?: string): st
 const TRIGGER_VERBS: Record<string, string> = {
   up: 'Pressing the widget',
   down: 'Pressing down on the widget',
-  released: 'Releasing the widget',
+  release: 'Releasing the widget',
   changed: 'Changing the widget',
+  long: 'Long-pressing the widget',
 };
 
 const PAGE_TARGET_LABELS: Record<'next' | 'prev' | 'back', string> = {

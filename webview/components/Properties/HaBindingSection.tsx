@@ -6,7 +6,7 @@ import { HaTemplateEditor } from './HaTemplateEditor';
 import { HaServiceEditor } from './HaServiceEditor';
 import {
   isHaBindable, supportsAction, actionDomains, defaultDisplayProperty, describeAutoDisplay, describeAction,
-  actionOptionsForDomain, actionEntityList, packActionEntities, commonActionDomain, firstCuratedAction, PAGE_COMMANDS,
+  ActionOption, actionOptionsForDomain, actionEntityList, packActionEntities, commonActionDomain, firstCuratedAction, PAGE_COMMANDS,
 } from '../../config/haBindingDefaults';
 
 interface TemplateEditorState {
@@ -22,12 +22,12 @@ const editTemplateButtonStyle: React.CSSProperties = {
 };
 
 /** Which <select> value represents the currently-stored action, so the dropdown stays in sync. */
-function actionSelectValue(action: HaAction | undefined, domain?: string): string {
+function actionSelectValue(action: HaAction | undefined, options: ActionOption[]): string {
   if (!action || action.kind === 'none') return 'none';
   if (action.kind === 'page') {
     return typeof action.target === 'number' ? 'page:goto' : `page:${action.target}`;
   }
-  const match = actionOptionsForDomain(domain).find(o => o.service === action.service && o.trigger === action.trigger);
+  const match = options.find(o => o.service === action.service && o.trigger === action.trigger);
   if (match) return `svc:${match.id}`;
   return 'custom';
 }
@@ -391,6 +391,7 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
   const actionEntityIds = actionEntityList(binding?.actionEntityId);
   // Curated actions are per-domain, so they only apply while every target shares one domain.
   const actionDomain = commonActionDomain(actionEntityIds);
+  const curatedActionOptions = actionOptionsForDomain(actionDomain, widget);
   const friendlyNameOf = (entityId: string) => haEntities.find(e => e.entityId === entityId)?.friendlyName;
   const propertyTemplates = binding?.propertyTemplates ?? {};
 
@@ -436,7 +437,7 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
     }
 
     if (value.startsWith('svc:') && actionEntityIds.length > 0) {
-      const opt = actionOptionsForDomain(actionDomain).find(o => o.id === value.slice(4));
+      const opt = curatedActionOptions.find(o => o.id === value.slice(4));
       if (opt) applyPatch({ action: { kind: 'service', trigger: opt.trigger, service: opt.service, dataLines: opt.dataLines } });
     }
   };
@@ -645,7 +646,7 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
                 action: next.length === 0 && action?.kind === 'service'
                   ? { kind: 'none' }
                   : actionEntityIds.length === 0 && next.length === 1
-                    ? firstCuratedAction(commonActionDomain(next))
+                    ? firstCuratedAction(commonActionDomain(next), widget)
                     : action,
               })}
               emptyHint={
@@ -665,14 +666,14 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
           <div style={fieldStyle}>
             <span style={labelStyle}>Action</span>
             <select
-              value={actionSelectValue(action, actionDomain)}
+              value={actionSelectValue(action, curatedActionOptions)}
               onChange={e => handleActionSelect(e.target.value)}
               style={{ ...inputStyle, cursor: 'pointer' }}
             >
               <option value="none">— None —</option>
-              {actionOptionsForDomain(actionDomain).length > 0 && (
+              {curatedActionOptions.length > 0 && (
                 <optgroup label="Home Assistant">
-                  {actionOptionsForDomain(actionDomain).map(opt => (
+                  {curatedActionOptions.map(opt => (
                     <option key={opt.id} value={`svc:${opt.id}`}>{opt.label}</option>
                   ))}
                 </optgroup>
@@ -714,14 +715,14 @@ export const HaBindingSection: React.FC<HaBindingSectionProps> = ({ widget, onUp
             </button>
           )}
 
-          {action?.kind === 'service' && actionSelectValue(action, actionDomain) === 'custom' && (
+          {action?.kind === 'service' && actionSelectValue(action, curatedActionOptions) === 'custom' && (
             <>
               <div style={fieldStyle}>
                 <span style={labelStyle}>openHASP event (trigger)</span>
                 <input
                   type="text"
                   value={action.trigger}
-                  placeholder="up, down, changed, released…"
+                  placeholder="up, down, release, changed, long…"
                   onChange={e => applyPatch({ action: { ...action, trigger: e.target.value } })}
                   style={inputStyle}
                 />
