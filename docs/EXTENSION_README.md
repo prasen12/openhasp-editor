@@ -302,6 +302,10 @@ the state as **Text**, producing `"text": '{{ states("sensor.outside_temperature
 
 - **Several targets at once** — the action entity picker is multi-select. Pick three lights of the
   same domain and one press acts on all of them.
+- **Long press** — push-button widgets offer a **Toggle (long press)** action for `light`,
+  `switch`, `input_boolean`, and `fan` entities, firing on openHASP's `long` event so a short
+  press and a long press can do different things. Toggle buttons and sliders don't emit `long`,
+  so the option is hidden for them.
 - **Page navigation without Home Assistant** — set **Action** to *Go to next page*, *Go back*, or
   *Go to page…*. This publishes an openHASP page command over MQTT and needs no entity at all.
 - **Anything not in the catalog** — choose **Custom…** and type the openHASP event trigger

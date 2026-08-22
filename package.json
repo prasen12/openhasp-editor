@@ -2,7 +2,7 @@
   "name": "openhasp-editor",
   "displayName": "openHASP Page Editor",
   "description": "Visual drag-and-drop editor for creating and editing openHASP pages",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "PrasenPalvankar",
   "license": "MIT",
   "icon": "assets/icon.png",

@@ -7,12 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-08-22
+
 ### Added
 
-- Long-press (`long`) actions in the Home Assistant binding catalog — push-button widgets can
-  long-press toggle the `light`, `switch`, `input_boolean`, and `fan` domains. The `long` trigger
-  also gets a friendly description, and existing eligible `long` bindings display as their
-  curated action (e.g. "Toggle (long press)") instead of "Custom…".
+- Long-press actions for Home Assistant bindings — a push button bound to a `light`, `switch`,
+  `input_boolean`, or `fan` entity now offers "Toggle (long press)", firing on openHASP's `long`
+  event so a short press and a long press can do different things. Toggle buttons and sliders
+  don't emit `long`, so the option stays hidden for them, and an existing `long` binding now
+  displays its curated action name instead of "Custom…".
+
+### Fixed
+
+- Action summaries for the `release` trigger now read "Releasing the widget …" instead of falling
+  back to the raw `On "release" …` text.
 
 ## [0.1.0]
 
@@ -33,5 +41,6 @@ Initial release.
 - Custom icon font and LittleFS image root settings so the canvas renders device
   glyphs and LVGL `.bin` images.
 
-[Unreleased]: https://github.com/prasen12/openhasp-editor/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/prasen12/openhasp-editor/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/prasen12/openhasp-editor/compare/v0.1.4...v0.1.5
 [0.1.0]: https://github.com/prasen12/openhasp-editor/releases/tag/v0.1.0
