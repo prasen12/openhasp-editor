@@ -305,7 +305,7 @@ the state as **Text**, producing `"text": '{{ states("sensor.outside_temperature
 - **Page navigation without Home Assistant** — set **Action** to *Go to next page*, *Go back*, or
   *Go to page…*. This publishes an openHASP page command over MQTT and needs no entity at all.
 - **Anything not in the catalog** — choose **Custom…** and type the openHASP event trigger
-  (`up`, `down`, `changed`, `released`), the Home Assistant service, and optional data lines.
+  (`up`, `down`, `release`, `changed`, `long`), the Home Assistant service, and optional data lines.
 - **Change what's displayed** — tick **Advanced display override** to switch between `val` and
   `text`, or to replace the auto-derived expression with your own.
 
